@@ -862,17 +862,33 @@ if uploaded_files is not None:
                     face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
                     face_2_df = pack_data_non_dup[pack_data_non_dup['Face']==2]
 
-                    face_1_df_1_val = face_1_df_1['ifor_anomaly'].values
-                    face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
+                    try:
+                        face_1_df_1_val = face_1_df_1['ifor_anomaly'].values
+                        face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
 
-                    face_1_df_2_val = face_1_df_2['ifor_anomaly'].values
-                    face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
+                        face_1_df_2_val = face_1_df_2['ifor_anomaly'].values
+                        face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
 
-                    face_2_df_1_val = face_2_df_1['ifor_anomaly'].values
-                    face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
+                        face_2_df_1_val = face_2_df_1['ifor_anomaly'].values
+                        face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
 
-                    face_2_df_2_val = face_2_df_2['ifor_anomaly'].values
-                    face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
+                        face_2_df_2_val = face_2_df_2['ifor_anomaly'].values
+                        face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
+                    except ValueError as er:
+                        raise "To to checke the Barcode"
+
+
+                    # face_1_df_1_val = face_1_df_1['ifor_anomaly'].values
+                    # face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
+
+                    # face_1_df_2_val = face_1_df_2['ifor_anomaly'].values
+                    # face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
+
+                    # face_2_df_1_val = face_2_df_1['ifor_anomaly'].values
+                    # face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
+
+                    # face_2_df_2_val = face_2_df_2['ifor_anomaly'].values
+                    # face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
 
 
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
