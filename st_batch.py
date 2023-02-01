@@ -174,22 +174,23 @@ with st.sidebar.container():
             disabled=False,
             horizontal= True,
         )
-    
+    #### SETTING UP THE TABLE USING THE 
     with st.form('Input setting'):
-        with st.expander('Model setting input'):
+        st.subheader("SADS visual input")
+        with st.expander('Model setting'):
             # with st.form("Models"):
-            st.subheader("SADS models")
+            st.subheader("Select SADS models")
             check_left, check_right = st.columns(2)
             model_ifor = check_left.checkbox('Isolation forest', value=True )
             model_lof = check_left.checkbox('Local Outlier Factor', value=False)
             model_repeat = check_left.checkbox('Repeat', value=False)
             model_gmm = check_right.checkbox('Gaussian Mixture', value=False)
-            model_bgmm = check_right.checkbox('Bayesian gaussian Mixture', value=False)
+            model_bgmm = check_right.checkbox('Bayesian Gaussian Mixture', value=False)
             model_svm = check_right.checkbox('One Class SVM', value=False)
             # train_ = st.form_submit_button("Apply")
 
         # st.subheader("Table control input")
-        with st.expander("Show Table control"):
+        with st.expander("Table control"):
         # with st.form('my_form'): 
             st.subheader("Table setting")
             sample_size = st.number_input("rows", min_value=10, value=30)
@@ -238,7 +239,7 @@ with st.sidebar.container():
                     paginationPageSize = st.number_input("Page size", value=5, min_value=0, max_value=sample_size)
                 st.text("___")
 
-        with st.expander('Chart plot setting'):
+        with st.expander('Chart setting'):
             st.subheader("Plot setting")
             chart_left, chart_right = st.columns(2)
             show_joules = chart_left.checkbox('Joules', value=True)
@@ -253,12 +254,12 @@ with st.sidebar.container():
 
     
     with st.form('Saving setting'):
-        st.title('Model setting input')
-        st.subheader("SADS Result")
+        # st.title('SADS result saving')
+        st.subheader("SADS download")
         check_left, check_right = st.columns(2)
-        pack_download = check_left.checkbox('Download pack images', value=True )
-        table_download = check_left.checkbox('Download the table', value=False)
-        chart_download = check_left.checkbox('Dowanlod the chart', value=False)
+        pack_download = check_left.checkbox('Pack image', value=True )
+        table_download = check_left.checkbox('Result table', value=False)
+        chart_download = check_left.checkbox('Chart image', value=False)
         save_submit = st.form_submit_button('Download')
 
 
@@ -439,7 +440,7 @@ if uploaded_files is not None:
 
             cellsytle_jscode = JsCode("""
             function(params) {
-                if (params.value == 0) {
+                if (params.value == 1) {
                     
                     return {
                         'color': 'white',
@@ -501,7 +502,7 @@ if uploaded_files is not None:
             # selected = grid_response['selected_rows']
 
         with chart_view :
-            st.header(f"Chart view : -- {ms[-1]}") 
+            st.header(f"View of : -- {ms[-1]}") 
             if model_ifor:
                 with st.expander("ISOLATION FOREST"):
                     plot_st, pi_st = st.columns((3,1))
