@@ -1,8 +1,8 @@
 import pathlib
+from contextlib import suppress
 import json
 from itertools import count
 from collections import Counter
-from turtle import width
 import streamlit as st
 import matplotlib.pyplot as plt 
 import numpy as np
@@ -31,22 +31,32 @@ import altair as alt
 
 from st_aggrid import GridOptionsBuilder, AgGrid, GridUpdateMode, DataReturnMode, JsCode
 
-import utils 
 
 # """
 # pip install streamlit-aggrid
 # """
 
-
+save_path = 'sads_data'
+with suppress(FileExistsError):
+        os.mkdir(save_path)
 import base64
 # caching.clear_cache()
 st.set_page_config(layout="wide") # setting the display in the 
 
+# hide_menu_style = """
+#         <style>
+#         #MainMenu {visibility: hidden;}
+#         footer {visibility: hidden;}
+#         header {visibility: hidden;}
+#         button[data-baseweb="tab"] {font-size: 26px;}
+#         </style>
+#         """
+
+
 hide_menu_style = """
         <style>
-        #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
-        header {visibility: hidden;}
+      
         button[data-baseweb="tab"] {font-size: 26px;}
         </style>
         """
@@ -64,7 +74,26 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE, dpi=600)  # fontsize of the figure title
 plt.style.context('bmh')
-new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Offine mode </p> </h2></center>'
+new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Offl`ine mode </p> </h2></center>'
+
+import base64
+import shutil
+
+
+def create_download_zip(zip_directory, zip_path, filename='foo.zip'):
+    """ 
+        zip_directory (str): path to directory  you want to zip 
+        zip_path (str): where you want to save zip file
+        filename (str): download filename for user who download this
+    """
+    shutil.make_archive(zip_path, 'zip', zip_directory)
+    with open(zip_path, 'rb') as f:
+        bytes = f.read()
+        b64 = base64.b64encode(bytes).decode()
+        href = f'<a href="data:file/zip;base64,{b64}" download=\'{filename}\'>\
+            download file \
+        </a>'
+        st.markdown(href, unsafe_allow_html=True)
 
 st.markdown(new_title, unsafe_allow_html=True)
 
@@ -146,6 +175,39 @@ RESULT_CHANGED = False
 
 RESULTING_DATAFRAME = pd.DataFrame()
 
+# def style_button_row(clicked_button_ix, n_buttons):
+#     def get_button_indices(button_ix):
+#         return {
+#             'nth_child': button_ix,
+#             'nth_last_child': n_buttons - button_ix + 1
+#         }
+
+#     clicked_style = """
+#     div[data-testid*="stHorizontalBlock"] > div:nth-child(%(nth_child)s):nth-last-child(%(nth_last_child)s) button {
+#         border-color: rgb(255, 75, 75);
+#         color: rgb(255, 75, 75);
+#         box-shadow: rgba(255, 75, 75, 0.5) 0px 0px 0px 0.2rem;
+#         outline: currentcolor none medium;
+#     }
+#     """
+#     unclicked_style = """
+#     div[data-testid*="stHorizontalBlock"] > div:nth-child(%(nth_child)s):nth-last-child(%(nth_last_child)s) button {
+#         pointer-events: none;
+#         cursor: not-allowed;
+#         opacity: 0.65;
+#         filter: alpha(opacity=65);
+#         -webkit-box-shadow: none;
+#         box-shadow: none;
+#     }
+#     """
+#     style = ""
+#     for ix in range(n_buttons):
+#         ix += 1
+#         if ix == clicked_button_ix:
+#             style += clicked_style % get_button_indices(ix)
+#         else:
+#             style += unclicked_style % get_button_indices(ix)
+#     st.markdown(f"<style>{style}</style>", unsafe_allow_html=True)
 # Max_battery_pack = SADA_settings.slider("Max battery pack", min_value=1, max_value=20, step=1)
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def get_logger(save:bool=True):
@@ -174,10 +236,49 @@ with st.sidebar.container():
             disabled=False,
             horizontal= True,
         )
+<<<<<<< HEAD
     #### SETTING UP THE TABLE USING THE 
     with st.form('Input setting'):
         st.subheader("SADS visual input")
         with st.expander('Model setting'):
+=======
+    
+    # col1, col2, col3, col4 = st.sidebar.columns([1, 1, 1, 1])
+    # with col1:
+    #     st.button("📆", on_click=style_button_row, kwargs={
+    #         'clicked_button_ix': 1, 'n_buttons': 4
+    #     })
+    # with col2:
+    #     st.button("👌", on_click=style_button_row, kwargs={
+    #         'clicked_button_ix': 2, 'n_buttons': 4
+    #     })
+    # with col3:
+    #     st.button("◀", on_click=style_button_row, kwargs={
+    #     'clicked_button_ix': 3, 'n_buttons': 4
+
+    #     })
+    # with col4:
+    #     st.button("🚧", on_click=style_button_row, kwargs={
+    #         'clicked_button_ix': 4, 'n_buttons': 4
+    #     })
+
+    with st.form('Saving setting'):
+        
+        with st.expander('Model saving input'):
+            st.subheader("Save following SADS results")
+            check_left, check_right = st.columns(2)
+            pack_download = check_left.checkbox('pack images', value=True )
+            table_download = check_right.checkbox('The table', value=True)
+            chart_download = check_left.checkbox('The chart', value=True)
+        save_submit = st.form_submit_button('Download')
+        # with st.container():
+        #     with st.expander('Explanation'):
+        #         st.write("Writing explanation text")
+
+        # save_submit = st.form_submit_button('Download')
+    with st.form('Input setting'):
+        with st.expander('Model control'):
+>>>>>>> dev
             # with st.form("Models"):
             st.subheader("Select SADS models")
             check_left, check_right = st.columns(2)
@@ -239,7 +340,11 @@ with st.sidebar.container():
                     paginationPageSize = st.number_input("Page size", value=5, min_value=0, max_value=sample_size)
                 st.text("___")
 
+<<<<<<< HEAD
         with st.expander('Chart setting'):
+=======
+        with st.expander('Plot control'):
+>>>>>>> dev
             st.subheader("Plot setting")
             chart_left, chart_right = st.columns(2)
             show_joules = chart_left.checkbox('Joules', value=True)
@@ -252,6 +357,7 @@ with st.sidebar.container():
 
         submitted = st.form_submit_button('Apply')
 
+<<<<<<< HEAD
     
     with st.form('Saving setting'):
         # st.title('SADS result saving')
@@ -265,6 +371,8 @@ with st.sidebar.container():
 
 
 
+=======
+>>>>>>> dev
 
 uploaded_files = st.file_uploader("Choose a CSV file" )
 if uploaded_files is not None:
@@ -282,7 +390,7 @@ if uploaded_files is not None:
         if not os.path.exists(SADS_CONFIG_FILE):
             JOULES = new_joule.tolist()
             get_logger(save=True)
-            IF = pickle.load(open('batch_sads/model.pkl', 'rb'))
+            IF = pickle.load(open('/app/model.pkl', 'rb'))
         else : 
             SADS_CONFIG = get_logger(save=False)
             # SHIFT_RESULT = SADS_CONFIG['drift_result']
@@ -328,6 +436,9 @@ if uploaded_files is not None:
     
     if ms:
         # print('we are in ms', ms)
+        pack_path = os.path.join(save_path, ms[-1])
+        with suppress(FileExistsError) or suppress(FileNotFoundError):
+            os.makedirs(pack_path)
         if ms in st.session_state.options:
             st.session_state.options.remove(ms[-1])
             st.session_state.default = ms[-1]
@@ -366,7 +477,6 @@ if uploaded_files is not None:
                     svm_cluster = svm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['svm_anomaly']  =  svm_cluster 
                     pack_data['svm_anomaly']  =  pack_data['svm_anomaly'].astype(bool)
-                RESULTING_DATAFRAME = pd.concat([RESULTING_DATAFRAME,pack_data])
 
             else :
                 if model_ifor:
@@ -431,7 +541,7 @@ if uploaded_files is not None:
                     pack_data['svm_anomaly']  =  svm_cluster 
                     pack_data['svm_anomaly']  =  pack_data['svm_anomaly'].astype(bool)
 
-                RESULTING_DATAFRAME = pd.concat([RESULTING_DATAFRAME,pack_data])
+                # RESULTING_DATAFRAME = pd.concat([RESULTING_DATAFRAME,pack_data])
                 
 
 
@@ -500,7 +610,9 @@ if uploaded_files is not None:
             #             st.table(selected_row)
             # df = grid_response['data']
             # selected = grid_response['selected_rows']
-
+            if table_download:
+                table_save = os.path.join(pack_path, 'table_vew.csv')
+                pack_data.to_csv(table_save)
         with chart_view :
             st.header(f"View of : -- {ms[-1]}") 
             if model_ifor:
@@ -933,6 +1045,11 @@ if uploaded_files is not None:
                     face_ax_2[1].set_title ( "Reapeted face 2" )
                     pack_face1.pyplot ( fig_pack_1)#, use_container_width=True )
                     pack_face2.pyplot ( fig_pack_2)#, use_container_width=True )
+                    if pack_download:
+                        ifor_face1 = os.path.join(pack_path, 'ifor_face1')
+                        ifor_face2 = os.path.join(pack_path, 'ifor_face2')
+                        fig_pack_1.savefig(ifor_face1)
+                        fig_pack_2.savefig(ifor_face2)
 
 
             if model_gmm:
@@ -1000,6 +1117,12 @@ if uploaded_files is not None:
                     pack_face1.pyplot ( fig_pack_1,)# use_container_width=True )
                     pack_face2.pyplot ( fig_pack_2,)# use_container_width=True )
 
+                    if pack_download:
+                        gmm_face1 = os.path.join(pack_path, 'gmm_face1')
+                        gmm_face2 = os.path.join(pack_path, 'gmm_face2')
+                        fig_pack_1.savefig(gmm_face1)
+                        fig_pack_2.savefig(gmm_face2)
+
             if model_repeat:
                 with st.expander("GAUSSIAN MIXTURE"):
                     pack_face1, pack_face2 = st.columns(2)
@@ -1064,13 +1187,29 @@ if uploaded_files is not None:
                     face_ax_2[1].set_title ( "Reapeted face 2" )
                     pack_face1.pyplot ( fig_pack_1,)# use_container_width=True )
                     pack_face2.pyplot ( fig_pack_2,)# use_container_width=True )
+                    if pack_download:
+                        repeat_face1 = os.path.join(pack_path, 'repeat_face1')
+                        repeat_face2 = os.path.join(pack_path, 'repeat_face2')
+                        fig_pack_1.savefig(repeat_face1)
+                        fig_pack_2.savefig(repeat_face2)
 
 #### SAVING THE DATE INTO THE LOCAL MACHINE 
 
     if save_submit:
-        # convert_df()
-        st.write(ms)
-        st.dataframe(RESULTING_DATAFRAME)
+        shutil.make_archive('zip_file', 'zip', save_path)
+        # create_download_zip(save_path,'.')
+        # with suppress(FileExistsError):
+        #     os.mkdir(save_path)
+        # face1 = os.path.join(save_path,'face1')
+        # face2 = os.path.join(save_path,'face2')
+        # fig_pack_1.savefig(face1)
+        # fig_pack_2.savefig(face2)
+         
+        # st.write(ms)
+        
+        # st.dataframe(RESULTING_DATAFRAME)
+        # save_frame = os.path.join(save_path, 'data.csv')
+        # RESULTING_DATAFRAME.to_csv(save_frame, index=False,header=True)
         #### concatinate dataframe before saving 
 
 
