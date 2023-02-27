@@ -236,12 +236,6 @@ with st.sidebar.container():
             disabled=False,
             horizontal= True,
         )
-<<<<<<< HEAD
-    #### SETTING UP THE TABLE USING THE 
-    with st.form('Input setting'):
-        st.subheader("SADS visual input")
-        with st.expander('Model setting'):
-=======
     
     # col1, col2, col3, col4 = st.sidebar.columns([1, 1, 1, 1])
     # with col1:
@@ -278,15 +272,14 @@ with st.sidebar.container():
         # save_submit = st.form_submit_button('Download')
     with st.form('Input setting'):
         with st.expander('Model control'):
->>>>>>> dev
             # with st.form("Models"):
-            st.subheader("Select SADS models")
+            st.subheader("SADS models")
             check_left, check_right = st.columns(2)
             model_ifor = check_left.checkbox('Isolation forest', value=True )
             model_lof = check_left.checkbox('Local Outlier Factor', value=False)
             model_repeat = check_left.checkbox('Repeat', value=False)
             model_gmm = check_right.checkbox('Gaussian Mixture', value=False)
-            model_bgmm = check_right.checkbox('Bayesian Gaussian Mixture', value=False)
+            model_bgmm = check_right.checkbox('Bayesian gaussian Mixture', value=False)
             model_svm = check_right.checkbox('One Class SVM', value=False)
             # train_ = st.form_submit_button("Apply")
 
@@ -340,11 +333,7 @@ with st.sidebar.container():
                     paginationPageSize = st.number_input("Page size", value=5, min_value=0, max_value=sample_size)
                 st.text("___")
 
-<<<<<<< HEAD
-        with st.expander('Chart setting'):
-=======
         with st.expander('Plot control'):
->>>>>>> dev
             st.subheader("Plot setting")
             chart_left, chart_right = st.columns(2)
             show_joules = chart_left.checkbox('Joules', value=True)
@@ -357,22 +346,6 @@ with st.sidebar.container():
 
         submitted = st.form_submit_button('Apply')
 
-<<<<<<< HEAD
-    
-    with st.form('Saving setting'):
-        # st.title('SADS result saving')
-        st.subheader("SADS download")
-        check_left, check_right = st.columns(2)
-        pack_download = check_left.checkbox('Pack image', value=True )
-        table_download = check_left.checkbox('Result table', value=False)
-        chart_download = check_left.checkbox('Chart image', value=False)
-        save_submit = st.form_submit_button('Download')
-
-
-
-
-=======
->>>>>>> dev
 
 uploaded_files = st.file_uploader("Choose a CSV file" )
 if uploaded_files is not None:
@@ -550,7 +523,7 @@ if uploaded_files is not None:
 
             cellsytle_jscode = JsCode("""
             function(params) {
-                if (params.value == 1) {
+                if (params.value == 0) {
                     
                     return {
                         'color': 'white',
@@ -614,7 +587,7 @@ if uploaded_files is not None:
                 table_save = os.path.join(pack_path, 'table_vew.csv')
                 pack_data.to_csv(table_save)
         with chart_view :
-            st.header(f"View of : -- {ms[-1]}") 
+            st.header(f"Chart view : -- {ms[-1]}") 
             if model_ifor:
                 with st.expander("ISOLATION FOREST"):
                     plot_st, pi_st = st.columns((3,1))
@@ -975,33 +948,17 @@ if uploaded_files is not None:
                     face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
                     face_2_df = pack_data_non_dup[pack_data_non_dup['Face']==2]
 
-                    try:
-                        face_1_df_1_val = face_1_df_1['ifor_anomaly'].values
-                        face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
+                    face_1_df_1_val = face_1_df_1['ifor_anomaly'].values
+                    face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
 
-                        face_1_df_2_val = face_1_df_2['ifor_anomaly'].values
-                        face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
+                    face_1_df_2_val = face_1_df_2['ifor_anomaly'].values
+                    face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
 
-                        face_2_df_1_val = face_2_df_1['ifor_anomaly'].values
-                        face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
+                    face_2_df_1_val = face_2_df_1['ifor_anomaly'].values
+                    face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
 
-                        face_2_df_2_val = face_2_df_2['ifor_anomaly'].values
-                        face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
-                    except ValueError as er:
-                        raise "To to checke the Barcode"
-
-
-                    # face_1_df_1_val = face_1_df_1['ifor_anomaly'].values
-                    # face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
-
-                    # face_1_df_2_val = face_1_df_2['ifor_anomaly'].values
-                    # face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
-
-                    # face_2_df_1_val = face_2_df_1['ifor_anomaly'].values
-                    # face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
-
-                    # face_2_df_2_val = face_2_df_2['ifor_anomaly'].values
-                    # face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
+                    face_2_df_2_val = face_2_df_2['ifor_anomaly'].values
+                    face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
 
 
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
@@ -1211,7 +1168,6 @@ if uploaded_files is not None:
         # save_frame = os.path.join(save_path, 'data.csv')
         # RESULTING_DATAFRAME.to_csv(save_frame, index=False,header=True)
         #### concatinate dataframe before saving 
-
 
 
 
