@@ -12,6 +12,11 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os 
 import pickle 
+
+import zipfile
+from io import BytesIO
+
+
 from datetime import datetime
 # from pickle import dump as pkl_dump, load as pkl_load
 # import requests
@@ -30,7 +35,7 @@ import plotly.express as px
 import altair as alt
 
 from st_aggrid import GridOptionsBuilder, AgGrid, GridUpdateMode, DataReturnMode, JsCode
-
+from os.path import exists as file_exists
 
 # """
 # pip install streamlit-aggrid
@@ -97,7 +102,7 @@ def create_download_zip(zip_directory, zip_path, filename='foo.zip'):
 
 st.markdown(new_title, unsafe_allow_html=True)
 
-@st.cache(suppress_st_warning=True)
+st.cache_data(suppress_st_warning=True)
 # @st.experimental_memo(suppress_st_warning=True)
 def data_reader(dataPath:str) -> pd.DataFrame :
     df = pd.read_csv(dataPath, decimal=',')
@@ -110,7 +115,7 @@ def data_reader(dataPath:str) -> pd.DataFrame :
     JOULES = data['Joules'].values 
     return data[['Barcode', 'anomaly', 'Face', 'Cell', 'Point','Face_Cell_Point','Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'ts']]           
 
-@st.cache
+st.cache_data
 def convert_df(df):
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
     return df.to_csv().encode('utf-8')
@@ -161,12 +166,28 @@ def train_model(data, model_type:str='ifor'):
         return svm
     
 
+# Define function to zip folder
+def zip_folder(folder_path):
+    # Create in-memory zip file
+    zip_buffer = BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as zip_file:
+    # with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED, False) as zip_file:
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                zip_file.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), folder_path))
+    # Seek to beginning of buffer
+    zip_buffer.seek(0)
+    return zip_buffer
+
+
 
 # ########################## PREDICTION FORM #######################################
 # SADA_settings = st.sidebar.form("SADS")
 # SADA_settings.title("SADS settings")
 
 SADS_CONFIG_FILE = 'sads_config.json'
+
 SADS_CONFIG = {}
 JOULES = []
 SHIFT_DETECTED = False
@@ -209,7 +230,7 @@ RESULTING_DATAFRAME = pd.DataFrame()
 #             style += unclicked_style % get_button_indices(ix)
 #     st.markdown(f"<style>{style}</style>", unsafe_allow_html=True)
 # Max_battery_pack = SADA_settings.slider("Max battery pack", min_value=1, max_value=20, step=1)
-@st.cache(suppress_st_warning=True, allow_output_mutation=True)
+st.cache_data(suppress_st_warning=True, allow_output_mutation=True)
 def get_logger(save:bool=True):
     """
     Generic utility function to get logger object with fixed configurations
@@ -221,6 +242,11 @@ def get_logger(save:bool=True):
     SADS_CONFIG['Joules'] = JOULES
     SADS_CONFIG['drift_result'] = SHIFT_RESULT
     SADS_CONFIG['result_change'] =  RESULT_CHANGED
+
+    if not os.path.exists(SADS_CONFIG_FILE):
+        # Create the file
+        with open(SADS_CONFIG_FILE, 'w') as outfile:
+            json.dump(SADS_CONFIG, outfile)
     if save:
         with open(SADS_CONFIG_FILE, 'w') as outfile:
             json.dump(SADS_CONFIG, outfile)
@@ -1153,7 +1179,19 @@ if uploaded_files is not None:
 #### SAVING THE DATE INTO THE LOCAL MACHINE 
 
     if save_submit:
-        shutil.make_archive('zip_file', 'zip', save_path)
+        # Define folder to zip
+     
+        # Zip the folder
+        zip_file = zip_folder(save_path)
+
+        # Download the zipped folder using Streamlit
+        st.download_button(
+            label="Download zipped folder",
+            data=zip_file.getvalue(),
+            file_name="my_zipped_folder.zip",
+            mime="application/zip"
+        )
+        # shutil.make_archive('zip_file', 'zip', save_path)
         # create_download_zip(save_path,'.')
         # with suppress(FileExistsError):
         #     os.mkdir(save_path)
