@@ -1085,10 +1085,11 @@ if uploaded_files is not None:
         zip_file = zip_folder(save_path)
 
         # Download the zipped folder using Streamlit
-        st.download_button(
+        st.sidebar.download_button(
             label="Download zipped folder",
             data=zip_file.getvalue(),
             file_name="my_zipped_folder.zip",
             mime="application/zip"
         )
-         
+
+ 
