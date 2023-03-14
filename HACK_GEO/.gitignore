@@ -1,0 +1,7 @@
+.ipynb_checkpoints/
+archive/
+processing/AWSCLIV2.pkg
+*.pt
+save_models/
+uavid_v1.5_official_release_image/
+processing/AWSCLIV2.pkg 
