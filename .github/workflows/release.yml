@@ -64,9 +64,6 @@ on:
   push tag:
     branches:
       - 'main'
-    tags:
-      - 'v*'
-
 
 env:
   REGISTRY: ghcr.io
@@ -96,8 +93,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=version,version=${{ env.VERSION }}
             # branch event
-            type:ref,event=branch
+            type=ref,event=branch
             # tag event
             type=ref,event=tag
             # pull request event
