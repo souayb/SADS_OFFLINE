@@ -431,7 +431,7 @@ if uploaded_files is not None:
     DDDF = st.empty()
     Main = st.empty()
     # day_left, time_right = Main.columns(2)
-    pack_view, table_view, chart_view = st.tabs(["Battery Pack", "🗃Table", "📈 Charts"])
+    pack_view, table_view, chart_view = st.tabs(["Pack", "🗃Table", "📈 Charts"])
         # Example controlers
 
     if ms:
