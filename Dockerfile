@@ -9,12 +9,12 @@
 # COPY poetry.lock pyproject.toml ./
 # RUN poetry config virtualenvs.create false \
 #   && poetry install --only main --no-interaction --no-ansi
-  
+
 # COPY *.py /app/
 # COPY *.pkl /app/
 # ADD ./utils/ /app/utils
 # ENV PYTHONPATH=$PWD:$PYTHONPATH
-# # RUN ls -al 
+# # RUN ls -al
 # EXPOSE 8501
 
 # ENTRYPOINT ["streamlit", "run", "--server.headless", "true", \
@@ -35,7 +35,7 @@
 #     && poetry install --no-interaction --no-ansi --no-root
 
 # # Copy application files
-# COPY . . 
+# COPY . .
 
 # # Set environment variables
 # ENV PYTHONPATH=/app
@@ -149,6 +149,9 @@ COPY st_multi_batch.py .
 COPY model.pkl .
 COPY sads_logging.py .
 COPY utils/ ./utils/
+# Copy Streamlit config file
+COPY .streamlit/config.toml .streamlit/config.toml
+
 
 # Set environment variables
 ENV PYTHONPATH=/app
