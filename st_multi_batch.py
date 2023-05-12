@@ -77,7 +77,7 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE, dpi=600)  # fontsize of the figure title
 plt.style.context('bmh')
-new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Offl`ine mode </p> </h2></center>'
+# new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Offl`ine mode </p> </h2></center>'
 
 import base64
 import shutil
@@ -98,7 +98,7 @@ def create_download_zip(zip_directory, zip_path, filename='foo.zip'):
         </a>'
         st.markdown(href, unsafe_allow_html=True)
 
-st.markdown(new_title, unsafe_allow_html=True)
+# st.markdown(new_title, unsafe_allow_html=True)
 
 st.cache(suppress_st_warning=True)
 # @st.experimental_memo(suppress_st_warning=True)
@@ -179,8 +179,42 @@ with st.sidebar.container():
             "Apply on: 👇",
             ["Pack", "Whole"],
             disabled=False,
-            # horizontal= True,
+            horizontal= True,
         )
+
+    color_blind = st.checkbox("Color Blind Mode")
+    if color_blind :
+            # Define the replacement colors for each color blind case
+        replacement_colors = {
+            'Red-blind': {'good': '#ffbf00', 'bad': '#ff7f7f', 'repeat': '#ffff7f'},
+            'Green-blind': {'good': '#3366cc', 'bad': '#ff7f7f', 'repeat': '#ffff7f'},
+            'Blue-blind': {'good': '#ff7f00', 'bad': '#ff7f7f', 'repeat': '#ffff7f'}
+        }
+
+        #show the color palette for color blind
+        if color_blind:
+            color_options = ["Red-blind", "Green-blind", "Blue-blind"]
+            selected_color = st.selectbox("Select a replacement color:", color_options)
+
+            # Depending on the selected color, replace the red and/or green elements with a replacement color
+            if selected_color == "Red-blind":
+                color_pallete = {'good': '#3366cc', 'bad': '#ffbf00', 'repeat': '#999999'}
+                st.markdown("<style>div.stButton > button:first-child {background-color: #ffbf00;}</style>", unsafe_allow_html=True)
+                st.markdown("<style>div.stCheckbox > label > div {background-color: #ffbf00;}</style>", unsafe_allow_html=True)
+                st.markdown("<style>div.stRadio > label > div:nth-child(2) > div {background-color: #ffbf00;}</style>", unsafe_allow_html=True)
+            elif selected_color == "Green-blind":
+                st.markdown("<style>div.stButton > button:first-child {background-color: #3366cc;}</style>", unsafe_allow_html=True)
+                st.markdown("<style>div.stCheckbox > label > div {background-color: #3366cc;}</style>", unsafe_allow_html=True)
+                st.markdown("<style>div.stRadio > label > div:nth-child(2) > div {background-color: #3366cc;}</style>", unsafe_allow_html=True)
+            else:
+                st.markdown("<style>div.stButton > button:first-child {background-color: #ff7f00;}</style>", unsafe_allow_html=True)
+                st.markdown("<style>div.stCheckbox > label > div {background-color: #ff7f00;}</style>", unsafe_allow_html=True)
+                st.markdown("<style>div.stRadio > label > div:nth-child(2) > div {background-color: #ff7f00;}</style>", unsafe_allow_html=True)
+            color_palette = replacement_colors[selected_color]
+    else: 
+        # Define the color palette
+        color_palette = {'good': 'green', 'bad': 'red', 'repeat': 'yellow'}
+
 
     with st.form('Saving setting'):
 
@@ -271,6 +305,14 @@ with st.sidebar.container():
 
 
         submitted = st.form_submit_button('Apply')
+
+if color_blind :
+        new_title = f"""<center> <h2> <p style="font-family:fantasy; color:{color_palette['good']}; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Online mode </p> </h2></center>"""
+        st.markdown(new_title, unsafe_allow_html=True)
+
+else:
+    new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Online mode </p> </h2></center>'
+    st.markdown(new_title, unsafe_allow_html=True)
 
 
 uploaded_files = st.file_uploader("Choose a CSV file" )
