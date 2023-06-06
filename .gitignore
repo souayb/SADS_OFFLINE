@@ -1,6 +1,8 @@
 .DS_Store  
 __pycache__/
 sads_data/
+# ignore json files 
+*.json
 
 # IDE
 .idea/

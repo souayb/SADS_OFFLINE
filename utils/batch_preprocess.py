@@ -7,13 +7,13 @@ class Preprocessing:
     def __init__(self):
         self.time_col = 'Y/M/D hh:mm:ss'
 
-    def _get_faulty_barcodes(self, df, lim1=448, lim2=448) -> list:
+    def _get_faulty_barcodes(self, df, lim1=448, lim2=746) -> list:
         tl = df.value_counts(["BarCode"]) < lim1
         ls_too_little_welds = tl[tl == True].index
         tm = df.value_counts(["BarCode"]) > lim2
         ls_too_many_welds = tm[tm == True].index
-        bc_to_remove = list(ls_too_little_welds) + list(ls_too_many_welds)
-        return [i[0] for i in bc_to_remove]
+        to_little, too_much = list(ls_too_little_welds) , list(ls_too_many_welds)
+        return ([i[0] for i in to_little] , [i[0] for i in too_much])
 
     def _filter_rows_by_values(self, df, col, values)-> pd.DataFrame:
         return df[~df[col].isin(values)]
@@ -54,4 +54,4 @@ class Preprocessing:
         df_out = self._add_location(df_out)
         df_out = self._add_weekday(df_out)
         df_out = self._get_good_bad(df_out)
-        return df_out
+        return df_out, self._get_faulty_barcodes(df_out)

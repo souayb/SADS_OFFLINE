@@ -55,19 +55,11 @@ hide_menu_style = """
         </style>
         """
 
-
-# hide_menu_style = """
-#         <style>
-#         footer {visibility: hidden;}
-
-#         button[data-baseweb="tab"] {font-size: 26px;}
-#         </style>
-#         """
 st.markdown(hide_menu_style, unsafe_allow_html=True)
 
-SMALL_SIZE = 3
-MEDIUM_SIZE =3
-BIGGER_SIZE = 3
+SMALL_SIZE = 5
+MEDIUM_SIZE = 3
+BIGGER_SIZE = 5
 # plt.rcParams['figure.figsize'] = (5, 10)
 plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
@@ -105,13 +97,13 @@ st.cache(suppress_st_warning=True)
 def data_reader(dataPath:str) -> pd.DataFrame :
     df = pd.read_csv(dataPath, decimal=',')
     prepro = utils.Preprocessing()
-    data = prepro.preprocess(df)
+    data, prob_barcode = prepro.preprocess(df)
     # data = data[['BarCode', 'Face', 'Cell', 'Point', 'Group' , 'Output Joules' , 'Charge (v)', 'Residue (v)', 'Force L N','Force L N_1', 'Y/M/D hh:mm:ss']]
     data.rename(columns={'BarCode':'Barcode', 'Output Joules': 'Joules', 'Charge (v)':'Charge', 'Residue (v)':'Residue','Force L N':'Force_N', 'Force L N_1':'Force_N_1', 'Y/M/D hh:mm:ss': 'Datetime'}, inplace=True)
     data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']] = data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].apply(np.float32)
     data[['Face', 'Cell', 'Point']] = data[['Face', 'Cell', 'Point']].values.astype( int )
     JOULES = data['Joules'].values
-    return data[['Barcode', 'anomaly', 'Face', 'Cell', 'Point','Face_Cell_Point','Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'ts']]
+    return data, prob_barcode
 
 st.cache()
 def convert_df(df):
@@ -181,6 +173,11 @@ with st.sidebar.container():
             disabled=False,
             horizontal= True,
         )
+    row, colum = st.columns(2)
+    with row:
+        row_number    = st.number_input("Pack rows", min_value=0, max_value=100, value=14, step=2, key='row')
+    with colum:
+        column_number = st.number_input( "Pack columns", min_value=1, max_value=100, value=16, step=1, key='colum')
 
     color_blind = st.checkbox("Color Blind Mode")
     if color_blind :
@@ -216,18 +213,6 @@ with st.sidebar.container():
         color_palette = {'good': 'green', 'bad': 'red', 'repeat': 'yellow'}
 
 
-    with st.form('Saving setting'):
-
-        with st.expander('Model saving input'):
-            st.subheader("Save following SADS results")
-            check_left, check_right = st.columns(2)
-            pack_download = check_left.checkbox('pack images', value=True )
-            table_download = check_right.checkbox('The table', value=True)
-            chart_download = check_left.checkbox('The chart', value=True)
-        save_submit = st.form_submit_button('Download')
-        # with st.container():
-        #     with st.expander('Explanation'):
-        #         st.write("Writing explanation text")
 
         # save_submit = st.form_submit_button('Download')
     with st.form('Input setting'):
@@ -306,6 +291,18 @@ with st.sidebar.container():
 
         submitted = st.form_submit_button('Apply')
 
+    with st.form('Saving setting'):
+
+        with st.expander('Model saving input'):
+            st.subheader("Save following SADS results")
+            check_left, check_right = st.columns(2)
+            pack_download = check_left.checkbox('pack images', value=True )
+            table_download = check_right.checkbox('The table', value=True)
+            chart_download = check_left.checkbox('The chart', value=True)
+        save_button, save_zip = st.columns(2)
+        save_submit = save_button.form_submit_button('Zip the file')
+        
+    
 if color_blind :
         new_title = f"""<center> <h2> <p style="font-family:fantasy; color:{color_palette['good']}; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Online mode </p> </h2></center>"""
         st.markdown(new_title, unsafe_allow_html=True)
@@ -314,7 +311,8 @@ else:
     new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Online mode </p> </h2></center>'
     st.markdown(new_title, unsafe_allow_html=True)
 
-
+# pack_label = ['Cell_{i}'.format(i=i) for i in range(1, row_number + 1)]
+pack_label = ['cell_1', '---------',  'cell_2', '---------',   'cell_3', '---------', 'cell_4', '---------', 'cell_5', '---------', 'cell_6', '---------', 'cell_7', '---------']
 uploaded_files = st.file_uploader("Choose a CSV file" )
 if uploaded_files is not None:
 
@@ -325,7 +323,7 @@ if uploaded_files is not None:
 
     with st.spinner('Wait for preprocess and model training'):
         st.info('Preporcesssing started ')
-        data = data_reader(uploaded_files)
+        data, prob_lists = data_reader(uploaded_files)
         new_joule = data['Joules'].values
         st.success('Preprocessing complete !')
         if not os.path.exists(SADS_CONFIG_FILE):
@@ -363,9 +361,14 @@ if uploaded_files is not None:
     if 'default' not in st.session_state:
         st.session_state.default = []
     # print('initial option', st.session_state.options)
+    #seting up the title for picking the barcode with markdown
+    if color_blind :
+        st.markdown(f'''<center> <h2> <p style="font-family:fantasy; color:{color_palette['good']}; font-size: 24px;"> Pick a Battery Pack 👇 </p> </h2></center>''', unsafe_allow_html=True) 
+    else:
+        st.markdown('<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> Pick a Battery Pack 👇 </p> </h2></center>', unsafe_allow_html=True)
 
     ms = st.multiselect(
-        label='Pick a Barcodef',
+        label= '',
         options=st.session_state.options,
         default=st.session_state.default
     )
@@ -376,7 +379,6 @@ if uploaded_files is not None:
         # Example controlers
 
     if ms:
-        # print('we are in ms', ms)
         pack_path = os.path.join(save_path, ms[-1])
         with suppress(FileExistsError) or suppress(FileNotFoundError):
             os.makedirs(pack_path)
@@ -384,9 +386,12 @@ if uploaded_files is not None:
             st.session_state.options.remove(ms[-1])
             st.session_state.default = ms[-1]
             st.experimental_rerun()
-        pack_data = data[data['Barcode']== ms[-1]]
+        if training_type == 'Pack':
+
+            pack_data = data[data['Barcode']== ms[-1]]
 
         ## TRAINING THE MODEL
+        
         if SHIFT_DETECTED:
             if training_type == 'Pack':
                 if model_ifor:
@@ -453,40 +458,71 @@ if uploaded_files is not None:
 
             if training_type == 'Pack':
                 if model_ifor:
-                    ifor = utils.train_model(pack_data, model_type='ifor')
+                    # ifor = utils.train_model(pack_data, model_type='ifor')
                     ifor_cluster = ifor.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
-
+ 
                 if model_gmm :
-                    gmm = utils.train_model(pack_data, model_type='gmm')
+                    # gmm = utils.train_model(pack_data, model_type='gmm')
                     gmm_cluster = gmm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['gmm_anomaly']  =  gmm_cluster
                     pack_data['gmm_anomaly']  =  pack_data['gmm_anomaly'].astype(bool)
 
                 if model_bgmm :
-                    bgmm = utils.train_model(pack_data, model_type='bgmm')
+                    # bgmm = utils.train_model(pack_data, model_type='bgmm')
                     bgmm_cluster = bgmm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['bgmm_anomaly']  =  bgmm_cluster
                     pack_data['bgmm_anomaly']  =  pack_data['bgmm_anomaly'].astype(bool)
 
                 if model_lof:
-                    lof = utils.train_model(pack_data, model_type='lof')
+                    # lof = utils.train_model(pack_data, model_type='lof')
                     lof_cluster = lof.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['lof_anomaly']  =  lof_cluster
                     pack_data['lof_anomaly']  =  pack_data['lof_anomaly'].astype(bool)
 
                 if model_svm:
-                    svm = utils.train_model(pack_data, model_type='svm')
+                    # svm = utils.train_model(pack_data, model_type='svm')
                     svm_cluster = svm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['svm_anomaly']  =  svm_cluster
                     pack_data['svm_anomaly']  =  pack_data['svm_anomaly'].astype(bool)
+            else:
+                if model_ifor:
+                    # ifor = utils.train_model(data, model_type='ifor')
+                    ifor_cluster = ifor.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
+                    data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
+                    data['ifor_anomaly']  =data['ifor_anomaly'].astype(bool)
 
-                # RESULTING_DATAFRAME = pd.concat([RESULTING_DATAFRAME,pack_data])
+                if model_gmm :
+                    # gmm = utils.train_model(data, model_type='gmm')
+                    gmm_cluster = gmm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
+                    data['gmm_anomaly']  =  gmm_cluster
+                    data['gmm_anomaly']  =  data['gmm_anomaly'].astype(bool)
+
+                if model_bgmm :
+                    # bgmm = utils.train_model(data, model_type='bgmm')
+                    bgmm_cluster = bgmm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
+                    data['bgmm_anomaly']  =  bgmm_cluster
+                    data['bgmm_anomaly']  =  data['bgmm_anomaly'].astype(bool)
+
+                if model_lof:
+                    # lof = utils.train_model(data, model_type='lof')
+                    lof_cluster = lof.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
+                    data['lof_anomaly']  =  lof_cluster
+                    data['lof_anomaly']  =  data['lof_anomaly'].astype(bool)
+
+                if model_svm:
+                    # svm = utils.train_model(data, model_type='svm')
+                    svm_cluster = svm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
+                    data['svm_anomaly']  =  svm_cluster
+                    data['svm_anomaly']  =  data['svm_anomaly'].astype(bool)
 
 
 
         with table_view:
+            if training_type =='Whole':
+                pack_data = data[data['Barcode']== ms[-1]]
+            st.subheader(f"Table view : -- {ms[-1]}")
             gb = GridOptionsBuilder.from_dataframe(pack_data)
 
             cellsytle_jscode = JsCode("""
@@ -528,7 +564,7 @@ if uploaded_files is not None:
 
             #Display the grid``
             # print(f" mss {ms[-1]} -- {type(ms[-1])}")
-            st.header(f"Table view : -- {ms[-1]}")
+            
             st.markdown("""
                 This is the table view of the battery pack filtered using the Barcode
             """)
@@ -555,7 +591,9 @@ if uploaded_files is not None:
                 table_save = os.path.join(pack_path, 'table_vew.csv')
                 pack_data.to_csv(table_save)
         with chart_view :
-            st.header(f"Chart view : -- {ms[-1]}")
+            if training_type =='Whole':
+                pack_data = data[data['Barcode']== ms[-1]]
+            st.subheader(f"Chart view : -- {ms[-1]}")
             if model_ifor:
                 with st.expander("ISOLATION FOREST"):
                     plot_st, pi_st = st.columns((3,1))
@@ -875,24 +913,20 @@ if uploaded_files is not None:
 
 
         with pack_view :
-
-            st.header(f"Pack view : -- {ms[-1]}")
+            if training_type =='Whole':
+                pack_data = data[data['Barcode']== ms[-1]]
+            st.subheader(f"Pack view : -- {ms[-1]}")
 
             pack_data_non_dup = pack_data[~pack_data.duplicated(subset=['Barcode', 'Face', 'Cell', 'Point'], keep= 'last')]
             pack_data_dup = pack_data[pack_data.duplicated(subset=['Barcode',  'Face', 'Cell', 'Point'], keep= 'last')]
-
-            face_1 = np.ones ( shape=(14, 16) ) * 0.
-            face_2 = np.ones ( shape=(14, 16) ) * 0.
-
-            face_1_maske = np.ones ( shape=(14, 16) )
-            face_2_maske = np.ones ( shape=(14, 16) )
-
-            face_1_repeat = np.zeros ( shape=(14, 16) )
-            face_2_repeat = np.zeros ( shape=(14, 16) )
-
-            face_1_repeat_mask = np.ones ( shape=(14, 16) )
-            face_2_repeat_mask = np.ones ( shape=(14, 16) )
-
+            
+            
+            shape = (row_number, column_number)
+            face_1, face_2 = np.zeros(shape), np.zeros(shape)
+            face_1_maske, face_2_maske = np.ones(shape), np.ones(shape)
+            face_1_repeat, face_2_repeat = np.zeros(shape), np.zeros(shape)
+            face_1_repeat_mask, face_2_repeat_mask = np.ones(shape), np.ones(shape)
+ 
             colorscale = [[0.0, 'rgb(169,169,169)'],
                         [0.5, 'rgb(0, 255, 0)'],
                         [1.0, 'rgb(255, 0, 0)']]
@@ -917,16 +951,16 @@ if uploaded_files is not None:
                     face_2_df = pack_data_non_dup[pack_data_non_dup['Face']==2]
 
                     face_1_df_1_val = face_1_df_1['ifor_anomaly'].values
-                    face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
+                    face_1_df_1_val = face_1_df_1_val.reshape(-1, column_number)
 
                     face_1_df_2_val = face_1_df_2['ifor_anomaly'].values
-                    face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
+                    face_1_df_2_val = face_1_df_2_val.reshape(-1, column_number)
 
                     face_2_df_1_val = face_2_df_1['ifor_anomaly'].values
-                    face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
+                    face_2_df_1_val = face_2_df_1_val.reshape(-1, column_number)
 
                     face_2_df_2_val = face_2_df_2['ifor_anomaly'].values
-                    face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
+                    face_2_df_2_val = face_2_df_2_val.reshape(-1, column_number)
 
 
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
@@ -944,8 +978,7 @@ if uploaded_files is not None:
 
                     sns.heatmap ( face_1, cmap= ListedColormap( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.8, square=True, ax=face_ax_1[0], cbar=False, mask=face_1_maske, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
+                                yticklabels=pack_label, annot=True, )
                     face_ax_1[0].set_title ( "Face 1" )
                         # cbar_kws={
                         #     'pad': .001,
@@ -955,18 +988,15 @@ if uploaded_files is not None:
 
                     sns.heatmap ( face_2, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.8, square=True, ax=face_ax_2[0], cbar=False, mask=face_2_maske, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
+                                yticklabels=pack_label, annot=True, )
                     face_ax_2[0].set_title ( "Face 2" )
                     sns.heatmap ( face_1_repeat, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.8, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_repeat_mask, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
+                                yticklabels=pack_label, annot=True, )
                     face_ax_1[1].set_title ( "Reapeted face 1" )
                     sns.heatmap ( face_2_repeat, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.8, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_repeat_mask, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
+                                yticklabels=pack_label, annot=True, )
                     face_ax_2[1].set_title ( "Reapeted face 2" )
                     pack_face1.pyplot ( fig_pack_1)#, use_container_width=True )
                     pack_face2.pyplot ( fig_pack_2)#, use_container_width=True )
@@ -988,16 +1018,16 @@ if uploaded_files is not None:
                     face_2_df = pack_data_non_dup[pack_data_non_dup['Face']==2]
 
                     face_1_df_1_val = face_1_df_1['gmm_anomaly'].values
-                    face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
+                    face_1_df_1_val = face_1_df_1_val.reshape(-1, column_number)
 
                     face_1_df_2_val = face_1_df_2['gmm_anomaly'].values
-                    face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
+                    face_1_df_2_val = face_1_df_2_val.reshape(-1, column_number)
 
                     face_2_df_1_val = face_2_df_1['gmm_anomaly'].values
-                    face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
+                    face_2_df_1_val = face_2_df_1_val.reshape(-1, column_number)
 
                     face_2_df_2_val = face_2_df_2['gmm_anomaly'].values
-                    face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
+                    face_2_df_2_val = face_2_df_2_val.reshape(-1, column_number)
 
 
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
@@ -1015,8 +1045,7 @@ if uploaded_files is not None:
 
                     sns.heatmap ( face_1, cmap= ListedColormap( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.8, square=True, ax=face_ax_1[0], cbar=False, mask=face_1_maske, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
+                                yticklabels= pack_label, annot=True, )
                     face_ax_1[0].set_title ( "Face 1" )
                         # cbar_kws={
                         #     'pad': .001,
@@ -1059,16 +1088,16 @@ if uploaded_files is not None:
                     face_2_df = pack_data_non_dup[pack_data_non_dup['Face']==2]
 
                     face_1_df_1_val = face_1_df_1['anomaly'].values
-                    face_1_df_1_val = face_1_df_1_val.reshape(-1, 16)
+                    face_1_df_1_val = face_1_df_1_val.reshape(-1, column_number)
 
                     face_1_df_2_val = face_1_df_2['anomaly'].values
-                    face_1_df_2_val = face_1_df_2_val.reshape(-1, 16)
+                    face_1_df_2_val = face_1_df_2_val.reshape(-1, column_number)
 
                     face_2_df_1_val = face_2_df_1['anomaly'].values
-                    face_2_df_1_val = face_2_df_1_val.reshape(-1, 16)
+                    face_2_df_1_val = face_2_df_1_val.reshape(-1, column_number)
 
                     face_2_df_2_val = face_2_df_2['anomaly'].values
-                    face_2_df_2_val = face_2_df_2_val.reshape(-1, 16)
+                    face_2_df_2_val = face_2_df_2_val.reshape(-1, column_number)
 
 
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
@@ -1119,7 +1148,6 @@ if uploaded_files is not None:
                         fig_pack_2.savefig(repeat_face2)
 
 #### SAVING THE DATE INTO THE LOCAL MACHINE
-
     if save_submit:
         # Define folder to zip
 
@@ -1127,7 +1155,7 @@ if uploaded_files is not None:
         zip_file = zip_folder(save_path)
 
         # Download the zipped folder using Streamlit
-        st.download_button(
+        st.sidebar.download_button(
             label="Download zipped folder",
             data=zip_file.getvalue(),
             file_name="my_zipped_folder.zip",
