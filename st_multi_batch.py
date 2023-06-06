@@ -391,7 +391,6 @@ if uploaded_files is not None:
             pack_data = data[data['Barcode']== ms[-1]]
 
         ## TRAINING THE MODEL
-        
         if SHIFT_DETECTED:
             if training_type == 'Pack':
                 if model_ifor:
@@ -458,61 +457,61 @@ if uploaded_files is not None:
 
             if training_type == 'Pack':
                 if model_ifor:
-                    # ifor = utils.train_model(pack_data, model_type='ifor')
+                    ifor = utils.train_model(pack_data, model_type='ifor')
                     ifor_cluster = ifor.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
- 
+
                 if model_gmm :
-                    # gmm = utils.train_model(pack_data, model_type='gmm')
+                    gmm = utils.train_model(pack_data, model_type='gmm')
                     gmm_cluster = gmm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['gmm_anomaly']  =  gmm_cluster
                     pack_data['gmm_anomaly']  =  pack_data['gmm_anomaly'].astype(bool)
 
                 if model_bgmm :
-                    # bgmm = utils.train_model(pack_data, model_type='bgmm')
+                    bgmm = utils.train_model(pack_data, model_type='bgmm')
                     bgmm_cluster = bgmm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['bgmm_anomaly']  =  bgmm_cluster
                     pack_data['bgmm_anomaly']  =  pack_data['bgmm_anomaly'].astype(bool)
 
                 if model_lof:
-                    # lof = utils.train_model(pack_data, model_type='lof')
+                    lof = utils.train_model(pack_data, model_type='lof')
                     lof_cluster = lof.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['lof_anomaly']  =  lof_cluster
                     pack_data['lof_anomaly']  =  pack_data['lof_anomaly'].astype(bool)
 
                 if model_svm:
-                    # svm = utils.train_model(pack_data, model_type='svm')
+                    svm = utils.train_model(pack_data, model_type='svm')
                     svm_cluster = svm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['svm_anomaly']  =  svm_cluster
                     pack_data['svm_anomaly']  =  pack_data['svm_anomaly'].astype(bool)
             else:
                 if model_ifor:
-                    # ifor = utils.train_model(data, model_type='ifor')
+                    ifor = utils.train_model(data, model_type='ifor')
                     ifor_cluster = ifor.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     data['ifor_anomaly']  =data['ifor_anomaly'].astype(bool)
 
                 if model_gmm :
-                    # gmm = utils.train_model(data, model_type='gmm')
+                    gmm = utils.train_model(data, model_type='gmm')
                     gmm_cluster = gmm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     data['gmm_anomaly']  =  gmm_cluster
                     data['gmm_anomaly']  =  data['gmm_anomaly'].astype(bool)
 
                 if model_bgmm :
-                    # bgmm = utils.train_model(data, model_type='bgmm')
+                    bgmm = utils.train_model(data, model_type='bgmm')
                     bgmm_cluster = bgmm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     data['bgmm_anomaly']  =  bgmm_cluster
                     data['bgmm_anomaly']  =  data['bgmm_anomaly'].astype(bool)
 
                 if model_lof:
-                    # lof = utils.train_model(data, model_type='lof')
+                    lof = utils.train_model(data, model_type='lof')
                     lof_cluster = lof.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     data['lof_anomaly']  =  lof_cluster
                     data['lof_anomaly']  =  data['lof_anomaly'].astype(bool)
 
                 if model_svm:
-                    # svm = utils.train_model(data, model_type='svm')
+                    svm = utils.train_model(data, model_type='svm')
                     svm_cluster = svm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     data['svm_anomaly']  =  svm_cluster
                     data['svm_anomaly']  =  data['svm_anomaly'].astype(bool)
