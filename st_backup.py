@@ -131,12 +131,8 @@ def get_lm(cell, row, col, neg:bool=False):
     else: 
         l1, l2 = (cell % row), (cell // row) % col
     return l1, l2
-def face1_face2(arr1, arr2, mask:bool=False):
-    if mask:
-        result = np.ones((arr1.shape[0] + arr1.shape[0], arr1.shape[1]), dtype=int)
-    else:
-        result = np.zeros((arr1.shape[0] + arr1.shape[0], arr1.shape[1]), dtype=int)
-        
+def face1_face2(arr1, arr2):
+    result = np.zeros((arr1.shape[0] + arr1.shape[0], arr1.shape[1]), dtype=int)
     result[::2, :] = arr1
     result[1::2, :] = arr2
     return result
@@ -147,7 +143,6 @@ def sinusoid_duplicate(data, data_dup,  matrix_shape, target:str='ifor_anomaly')
     rows, cols = matrix_shape
     matrix = np.zeros(matrix_shape, dtype=int)
     matrix_annot = np.zeros(matrix_shape, dtype=int)
-    matrix_mask = np.ones(matrix_shape, dtype=int)
 
     for _, row in data.iterrows():
 
@@ -160,18 +155,15 @@ def sinusoid_duplicate(data, data_dup,  matrix_shape, target:str='ifor_anomaly')
         if l2 % 2 != 0 and l2!=0:
             l1 = -(l1+1)
             # l1 += 1
-        if dd['size'].values > 1:
-            matrix[l1, l2] = row[target]
-            matrix_annot[l1, l2] = dd['size']-1
-            matrix_mask[l1, l2] =  False
-    return matrix, matrix_annot, matrix_mask
+        matrix[l1, l2] = row[target]
+        matrix_annot[l1, l2] = dd.size
+    return matrix, matrix_annot
 
 def sinusoid(data, matrix_shape, target:str='ifor_anomaly'):
  
     rows, cols = matrix_shape
     matrix = np.zeros(matrix_shape, dtype=int)
     matrix_annot = np.zeros(matrix_shape, dtype=int)
-    matrix_mask = np.ones(matrix_shape, dtype=int)
 
     for cell, result in data[['Cell', target]].to_numpy():
         l1, l2 = get_lm(cell-1, rows, cols)
@@ -180,8 +172,7 @@ def sinusoid(data, matrix_shape, target:str='ifor_anomaly'):
             # l1 += 1
         matrix[l1, l2] = result
         matrix_annot[l1, l2] = cell
-        matrix_mask[l1, l2] = False
-    return matrix, matrix_annot, matrix_mask
+    return matrix, matrix_annot
 
 # ########################## PREDICTION FORM #######################################
 # SADA_settings = st.sidebar.form("SADS")
@@ -274,6 +265,7 @@ with st.sidebar.container():
         # save_submit = st.form_submit_button('Download')
     with st.form('Input setting'):
         with st.expander('Model control'):
+            # with st.form("Models"):
             st.subheader("SADS models")
             check_left, check_right = st.columns(2)
             model_ifor = check_left.checkbox('Isolation forest', value=True )
@@ -451,11 +443,8 @@ if uploaded_files is not None:
             st.session_state.default = ms[-1]
             st.experimental_rerun()
         if training_type == 'Pack':
+
             pack_data = data[data['Barcode']== ms[-1]]
-            pack_ = data.groupby(['Barcode', 'Face', 'Cell', 'Point'], as_index=False).size()
-            st.dataframe(pack_)
-
-
 
         ## TRAINING THE MODEL
         if SHIFT_DETECTED:
@@ -528,6 +517,7 @@ if uploaded_files is not None:
                     ifor_cluster = ifor.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
+                    st.table(pack_data[(pack_data['Face']==1) & (pack_data['Point']==1)])
 
                 if model_gmm :
                     gmm = utils.train_model(pack_data, model_type='gmm')
@@ -986,11 +976,12 @@ if uploaded_files is not None:
             pack_data_non_dup = pack_data[~pack_data.duplicated(subset=['Barcode', 'Face', 'Cell', 'Point'], keep= 'last')]
             pack_data_dup = pack_data[pack_data.duplicated(subset=['Barcode',  'Face', 'Cell', 'Point'], keep= 'last')]
             
-            st.table(duplicate_count.columns)
+
  
             colorscale = [[0.0, 'rgb(169,169,169)'],
                         [0.5, 'rgb(0, 255, 0)'],
                         [1.0, 'rgb(255, 0, 0)']]
+            pack_data_non_dup['ifor_anomaly'] = pack_data_non_dup['ifor_anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
             if model_ifor:
                 with st.expander("ISOLATION FOREST"):
                     pack_face1, pack_face2 = st.columns(2)
@@ -1007,39 +998,26 @@ if uploaded_files is not None:
                     face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
 
 
-                    face_1_df_1_dup = pack_data_dup[(pack_data_dup['Face']==1) & (pack_data_dup['Point']==1)]# & (pack_data_dup['ifor_anomaly']==False)]
-                    face_1_df_2_dup = pack_data_dup[(pack_data_dup['Face']==1) & (pack_data_dup['Point']==2)]# & (pack_data_dup['anomaly']==False)]
-                    face_2_df_1_dup = pack_data_dup[(pack_data_dup['Face']==2) & (pack_data_dup['Point']==1)]# & (pack_data_dup['anomaly']==False)]
-                    face_2_df_2_dup = pack_data_dup[(pack_data_dup['Face']==2) & (pack_data_dup['Point']==2)]# & (pack_data_dup['anomaly']==False)]
-
-
-                    # st.table(face_1_df_1)
-                    face_1_1,face_1_1_annot, face_1_1_mask = sinusoid(face_1_df_1, (int(row_number/2), column_number), target='ifor_anomaly')
-                    face_1_2,face_1_2_annot, face_1_2_mask  = sinusoid(face_1_df_2, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_1_1,face_1_1_annot = sinusoid(face_1_df_1, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_1_2,face_1_2_annot = sinusoid(face_1_df_2, (int(row_number/2), column_number), target='ifor_anomaly')
                     face_1 = face1_face2(face_1_1, face_1_2)
                     face_1_annot = face1_face2(face_1_1_annot, face_1_2_annot)
-                    face_1_mask = face1_face2(face_1_1_mask, face_1_2_mask, mask=True) 
 
-                    face_2_1, face_2_1_annot, face_2_1_mask  = sinusoid(face_2_df_1, (int(row_number/2), column_number), target='ifor_anomaly')
-                    face_2_2, face_2_2_annot, face_2_2_mask = sinusoid(face_2_df_2, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_2_1, face_2_1_annot = sinusoid(face_2_df_1, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_2_2, face_2_2_annot = sinusoid(face_2_df_2, (int(row_number/2), column_number), target='ifor_anomaly')
                     face_2 = face1_face2(face_2_1, face_2_2)
                     face_2_annot = face1_face2(face_2_1_annot, face_2_2_annot)
-                    face_2_mask  = face1_face2(face_2_1_mask,  face_2_2_mask, mask=True)
 
 
-                    face_1_1_dup,face_1_1_annot_dup, face_1_1_mask_dup = sinusoid_duplicate(face_1_df_1_dup, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
-                    face_1_2_dup,face_1_2_annot_dup, face_1_2_mask_dup = sinusoid_duplicate(face_1_df_2_dup, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_1_1_dup,face_1_1_annot_dup = sinusoid_duplicate(face_1_df_1, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_1_2_dup,face_1_2_annot_dup = sinusoid_duplicate(face_1_df_2, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
                     face_1_dup = face1_face2(face_1_1_dup, face_1_2_dup)
-                    face_1_annot_dup = face1_face2(face_1_1_annot_dup, face_1_2_annot_dup)
-                    face_1_mask_dup = face1_face2(face_1_1_mask_dup, face_1_2_mask_dup, mask=True)
+                    face_1_anno_dup = face1_face2(face_1_1_annot_dup, face_1_2_annot_dup)
 
-             
-                    face_2_1_dup,face_2_1_annot_dup, face_2_1_mask_dup = sinusoid_duplicate(face_2_df_1_dup, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
-                    face_2_2_dup,face_2_2_annot_dup, face_2_2_mask_dup = sinusoid_duplicate(face_2_df_2_dup, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_2_1_dup, face_2_1_annot_dup = sinusoid_duplicate(face_2_df_1, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_2_2_dup, face_2_2_annot_dup = sinusoid_duplicate(face_2_df_2, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
                     face_2_dup = face1_face2(face_2_1_dup, face_2_2_dup)
                     face_2_annot_dup = face1_face2(face_2_1_annot_dup, face_2_2_annot_dup)
-                    face_2_mask_dup = face1_face2(face_2_1_mask_dup, face_2_2_mask_dup, mask=True)
-
                     
 
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
@@ -1047,23 +1025,23 @@ if uploaded_files is not None:
  
 
                     sns.heatmap ( face_1, cmap= ListedColormap( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.2, square=True, ax=face_ax_1[0], cbar=False, mask=face_1_mask, \
-                                yticklabels=pack_label, annot=face_1_annot, )
+                                linewidths=0.2, square=True, ax=face_ax_1[0], cbar=False, #mask=face_1_maske, \
+                                yticklabels=pack_label, annot=True, )
                     face_ax_1[0].set_title ( "Face 1" )
 
                     sns.heatmap ( face_2, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.2, square=True, ax=face_ax_2[0], cbar=False, mask=face_2_mask, \
-                                yticklabels=pack_label, annot= face_2_annot, )
+                                linewidths=0.2, square=True, ax=face_ax_2[0], cbar=False, #mask=face_2_maske, \
+                                yticklabels=pack_label, annot=True, )
                     face_ax_2[0].set_title ( "Face 2" )
 
                     sns.heatmap ( face_1_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.2, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_mask_dup, \
-                                yticklabels=pack_label, annot= face_1_annot_dup, )
+                                linewidths=0.2, square=True, ax=face_ax_1[1], cbar=False, #mask=face_1_maske, \
+                                yticklabels=pack_label, annot=True, )
                     face_ax_1[1].set_title ( "Reapeteeeed face 1" )
 
                     sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
-                                yticklabels=pack_label, annot= face_1_annot_dup, )
+                                linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, #mask=face_2_repeat_mask, \
+                                yticklabels=pack_label, annot=True , )
                     face_ax_2[1].set_title ( "Reapeted face 2" )
                     
                     pack_face1.pyplot ( fig_pack_1)#, use_container_width=True )
