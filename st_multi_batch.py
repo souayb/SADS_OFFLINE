@@ -98,7 +98,6 @@ def data_reader(dataPath:str) -> pd.DataFrame :
     df = pd.read_csv(dataPath, decimal=',')
     prepro = utils.Preprocessing()
     data, prob_barcode = prepro.preprocess(df)
-    # data = data[['BarCode', 'Face', 'Cell', 'Point', 'Group' , 'Output Joules' , 'Charge (v)', 'Residue (v)', 'Force L N','Force L N_1', 'Y/M/D hh:mm:ss']]
     data.rename(columns={'BarCode':'Barcode', 'Output Joules': 'Joules', 'Charge (v)':'Charge', 'Residue (v)':'Residue','Force L N':'Force_N', 'Force L N_1':'Force_N_1', 'Y/M/D hh:mm:ss': 'Datetime'}, inplace=True)
     data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']] = data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].apply(np.float32)
     data[['Face', 'Cell', 'Point']] = data[['Face', 'Cell', 'Point']].values.astype( int )
@@ -142,7 +141,7 @@ def face1_face2(arr1, arr2, mask:bool=False):
     return result
 
 
-def sinusoid_duplicate(data, data_dup,  matrix_shape, target:str='ifor_anomaly'):
+def sinusoid_duplicate(data, data_dup,  matrix_shape, target:str='anomaly'):
  
     rows, cols = matrix_shape
     matrix = np.zeros(matrix_shape, dtype=int)
@@ -166,7 +165,7 @@ def sinusoid_duplicate(data, data_dup,  matrix_shape, target:str='ifor_anomaly')
             matrix_mask[l1, l2] =  False
     return matrix, matrix_annot, matrix_mask
 
-def sinusoid(data, matrix_shape, target:str='ifor_anomaly'):
+def sinusoid(data, matrix_shape, target:str='anomaly'):
  
     rows, cols = matrix_shape
     matrix = np.zeros(matrix_shape, dtype=int)
@@ -277,12 +276,7 @@ with st.sidebar.container():
             st.subheader("SADS models")
             check_left, check_right = st.columns(2)
             model_ifor = check_left.checkbox('Isolation forest', value=True )
-            model_lof = check_left.checkbox('Local Outlier Factor', value=False)
-            model_repeat = check_left.checkbox('Repeat', value=False)
-            model_gmm = check_right.checkbox('Gaussian Mixture', value=False)
-            model_bgmm = check_right.checkbox('Bayesian gaussian Mixture', value=False)
-            model_svm = check_right.checkbox('One Class SVM', value=False)
-            # train_ = st.form_submit_button("Apply")
+            model_repeat = check_right.checkbox('Repeat', value=False)
 
         # st.subheader("Table control input")
         with st.expander("Table control"):
@@ -364,7 +358,7 @@ if color_blind :
         st.markdown(new_title, unsafe_allow_html=True)
 
 else:
-    new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: OOOOOOOOOnline mode </p> </h2></center>'
+    new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Online mode </p> </h2></center>'
     st.markdown(new_title, unsafe_allow_html=True)
 
 # pack_label = ['Cell_{i}'.format(i=i) for i in range(1, row_number + 1)]
@@ -372,10 +366,10 @@ pack_label = ['cell_1', '---------',  'cell_2', '---------',   'cell_3', '------
 uploaded_files = st.file_uploader("Choose a CSV file" )
 
 def get_face(pack_data_non_dup):
-    face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]# & (pack_data_non_dup['anomaly']==False)]
-    face_1_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
-    face_2_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==1)]# & (pack_data_non_dup['anomaly']==False)]
-    face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
+    face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]
+    face_1_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==2)]
+    face_2_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==1)]
+    face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]
     return face_1_df_1,face_1_df_2,face_2_df_1,face_2_df_2
 
 if uploaded_files is not None:
@@ -458,131 +452,37 @@ if uploaded_files is not None:
 
 
         ## TRAINING THE MODEL
+
         if SHIFT_DETECTED:
             if training_type == 'Pack':
                 if model_ifor:
                     ifor = utils.train_model(pack_data, model_type='ifor')
                     ifor_cluster = ifor.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
-                    pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
-
-                if model_gmm :
-                    gmm = utils.train_model(pack_data, model_type='gmm')
-                    gmm_cluster = gmm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['gmm_anomaly']  =  gmm_cluster
-                    pack_data['gmm_anomaly']  =  pack_data['gmm_anomaly'].astype(bool)
-
-                if model_bgmm :
-                    bgmm = utils.train_model(pack_data, model_type='bgmm')
-                    bgmm_cluster = bgmm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['bgmm_anomaly']  =  bgmm_cluster
-                    pack_data['bgmm_anomaly']  =  pack_data['bgmm_anomaly'].astype(bool)
-
-                if model_lof:
-                    lof = utils.train_model(pack_data, model_type='lof')
-                    lof_cluster = lof.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['lof_anomaly']  =  lof_cluster
-                    pack_data['lof_anomaly']  =  pack_data['lof_anomaly'].astype(bool)
-
-                if model_svm:
-                    svm = utils.train_model(pack_data, model_type='svm')
-                    svm_cluster = svm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['svm_anomaly']  =  svm_cluster
-                    pack_data['svm_anomaly']  =  pack_data['svm_anomaly'].astype(bool)
+                    pack_data['anomaly'] = np.where(ifor_cluster == 1, 0, 1)
+                    pack_data['anomaly']  =pack_data['anomaly'].astype(bool)
 
             else :
                 if model_ifor:
                     ifor = utils.train_model(data, model_type='ifor')
                     ifor_cluster = ifor.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
-                    data['ifor_anomaly']  =data['ifor_anomaly'].astype(bool)
+                    data['anomaly'] = np.where(ifor_cluster == 1, 0, 1)
+                    data['anomaly']  =data['anomaly'].astype(bool)
 
-                if model_gmm :
-                    gmm = utils.train_model(data, model_type='gmm')
-                    gmm_cluster = gmm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['gmm_anomaly']  =  gmm_cluster
-                    data['gmm_anomaly']  =  data['gmm_anomaly'].astype(bool)
-
-                if model_bgmm :
-                    bgmm = utils.train_model(data, model_type='bgmm')
-                    bgmm_cluster = bgmm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['bgmm_anomaly']  =  bgmm_cluster
-                    data['bgmm_anomaly']  =  data['bgmm_anomaly'].astype(bool)
-
-                if model_lof:
-                    lof = utils.train_model(data, model_type='lof')
-                    lof_cluster = lof.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['lof_anomaly']  =  lof_cluster
-                    data['lof_anomaly']  =  data['lof_anomaly'].astype(bool)
-
-                if model_svm:
-                    svm = utils.train_model(data, model_type='svm')
-                    svm_cluster = svm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['svm_anomaly']  =  lof_cluster
-                    data['svm_anomaly']  =  data['svm_anomaly'].astype(bool)
         else:
 
             if training_type == 'Pack':
                 if model_ifor:
                     ifor = utils.train_model(pack_data, model_type='ifor')
                     ifor_cluster = ifor.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
-                    pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
-
-                if model_gmm :
-                    gmm = utils.train_model(pack_data, model_type='gmm')
-                    gmm_cluster = gmm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['gmm_anomaly']  =  gmm_cluster
-                    pack_data['gmm_anomaly']  =  pack_data['gmm_anomaly'].astype(bool)
-
-                if model_bgmm :
-                    bgmm = utils.train_model(pack_data, model_type='bgmm')
-                    bgmm_cluster = bgmm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['bgmm_anomaly']  =  bgmm_cluster
-                    pack_data['bgmm_anomaly']  =  pack_data['bgmm_anomaly'].astype(bool)
-
-                if model_lof:
-                    lof = utils.train_model(pack_data, model_type='lof')
-                    lof_cluster = lof.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['lof_anomaly']  =  lof_cluster
-                    pack_data['lof_anomaly']  =  pack_data['lof_anomaly'].astype(bool)
-
-                if model_svm:
-                    svm = utils.train_model(pack_data, model_type='svm')
-                    svm_cluster = svm.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    pack_data['svm_anomaly']  =  svm_cluster
-                    pack_data['svm_anomaly']  =  pack_data['svm_anomaly'].astype(bool)
+                    pack_data['anomaly'] = np.where(ifor_cluster == 1, 0, 1)
+                    pack_data['anomaly']  =pack_data['anomaly'].astype(bool)
+ 
             else:
                 if model_ifor:
                     ifor = utils.train_model(data, model_type='ifor')
                     ifor_cluster = ifor.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
-                    data['ifor_anomaly']  =data['ifor_anomaly'].astype(bool)
-
-                if model_gmm :
-                    gmm = utils.train_model(data, model_type='gmm')
-                    gmm_cluster = gmm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['gmm_anomaly']  =  gmm_cluster
-                    data['gmm_anomaly']  =  data['gmm_anomaly'].astype(bool)
-
-                if model_bgmm :
-                    bgmm = utils.train_model(data, model_type='bgmm')
-                    bgmm_cluster = bgmm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['bgmm_anomaly']  =  bgmm_cluster
-                    data['bgmm_anomaly']  =  data['bgmm_anomaly'].astype(bool)
-
-                if model_lof:
-                    lof = utils.train_model(data, model_type='lof')
-                    lof_cluster = lof.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['lof_anomaly']  =  lof_cluster
-                    data['lof_anomaly']  =  data['lof_anomaly'].astype(bool)
-
-                if model_svm:
-                    svm = utils.train_model(data, model_type='svm')
-                    svm_cluster = svm.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
-                    data['svm_anomaly']  =  svm_cluster
-                    data['svm_anomaly']  =  data['svm_anomaly'].astype(bool)
-
+                    data['anomaly'] = np.where(ifor_cluster == 1, 0, 1)
+                    data['anomaly']  =data['anomaly'].astype(bool)
 
 
         with table_view:
@@ -607,7 +507,7 @@ if uploaded_files is not None:
                 }
             };
             """)
-            gb.configure_column("ifor_anomaly", cellStyle=cellsytle_jscode)
+            gb.configure_column("anomaly", cellStyle=cellsytle_jscode)
 
             if enable_sidebar:
                 gb.configure_side_bar()
@@ -664,7 +564,7 @@ if uploaded_files is not None:
                 with st.expander("ISOLATION FOREST"):
                     plot_st, pi_st = st.columns((3,1))
                     if model_ifor:
-                        pack_data['ifor_plot'] = pack_data['ifor_anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
+                        pack_data['ifor_plot'] = pack_data['anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
                         fig = px.scatter ( pack_data, y='Joules', color='ifor_plot', title="Output Joule",
                                             color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
 
@@ -708,220 +608,10 @@ if uploaded_files is not None:
                         color_map = {False:'#636EFA', True:'#EF553B'}
                         with st.spinner("Ploting the pairplot"):
                             # pack_data['ifor_plot'] = pack_data['ifor_plot'].apply ( lambda x: False if x == 'Normal' else  True )
-                            fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'ifor_anomaly']], diag='box',index='ifor_anomaly',
+                            fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'anomaly']], diag='box',index='anomaly',
                                   colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
                             st.plotly_chart ( fig_pp, use_container_width=True )
-            if model_gmm:
-                with st.expander("GAUSSIAN MIXTURE"):
-                    plot_st, pi_st = st.columns((3,1))
-                    if model_ifor:
-                        pack_data['gmm_anomaly'] = pack_data['gmm_anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
-                        fig = px.scatter ( pack_data, y='Joules', color='gmm_anomaly', title="Output Joule",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-
-
-                        fig.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )  # 'rgb(149, 223, 245)')
-                        plot_st.plotly_chart ( fig, use_container_width=True )
-
-                        fig_pi = px.pie ( pack_data, values='Joules', hover_name='gmm_anomaly' , names='gmm_anomaly', title='the ratio of anomaly vs normal',
-                              hole=.2, color_discrete_map={'Anomaly':'red', 'Normal':'blue'})
-                        pi_st.plotly_chart ( fig_pi, use_container_width=True )
-
-                    if show_force_n:
-
-                        fig_f = px.scatter( pack_data, y='Force_N', color='gmm_anomaly', title="Force left",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_f.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_f, use_container_width=True )
-
-                    if show_force_n_1:
-
-                        fig_f_1 = px.scatter( pack_data, y='Force_N_1', color='gmm_anomaly', title="Force right",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_f_1.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_f_1, use_container_width=True )
-
-                    if show_charge:
-
-                        fig_c = px.scatter( pack_data, y='Charge', color='gmm_anomaly', title="Charge",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_c.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_c, use_container_width=True )
-
-
-                    if show_residue :
-                        fig_r = px.scatter( pack_data, y='Residue', color='gmm_anomaly', title="Residue",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_r.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_r, use_container_width=True )
-
-
-                    if show_pairplot:
-                        color_map = {False:'#636EFA', True:'#EF553B'}
-                        with st.spinner("Ploting the pairplot"):
-                            pack_data['gmm_anomaly'] = pack_data['gmm_anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
-                            fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'gmm_anomaly']], diag='box',index='gmm_anomaly',
-                                  colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
-                            st.plotly_chart ( fig_pp, use_container_width=True )
-
-
-            if model_bgmm:
-                with st.expander("BAYESIAN GAUSSIAN MIXTURE"):
-                    plot_st, pi_st = st.columns((3,1))
-                    if model_ifor:
-                        pack_data['bgmm_anomaly'] = pack_data['bgmm_anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
-                        fig = px.scatter ( pack_data, y='Joules', color='bgmm_anomaly', title="Output Joule",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-
-
-                        fig.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )  # 'rgb(149, 223, 245)')
-                        plot_st.plotly_chart ( fig, use_container_width=True )
-
-                        fig_pi = px.pie ( pack_data, values='Joules', hover_name='bgmm_anomaly' , names='bgmm_anomaly', title='the ratio of anomaly vs normal',
-                              hole=.2, color_discrete_map={'Anomaly':'red', 'Normal':'blue'})
-                        pi_st.plotly_chart ( fig_pi, use_container_width=True )
-
-                    if show_force_n:
-
-                        fig_f = px.scatter( pack_data, y='Force_N', color='bgmm_anomaly', title="Force left",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_f.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_f, use_container_width=True )
-
-                    if show_force_n_1:
-
-                        fig_f_1 = px.scatter( pack_data, y='Force_N_1', color='bgmm_anomaly', title="Force right",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_f_1.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_f_1, use_container_width=True )
-
-                    if show_charge:
-
-                        fig_c = px.scatter( pack_data, y='Charge', color='bgmm_anomaly', title="Charge",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_c.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_c, use_container_width=True )
-
-
-                    if show_residue :
-                        fig_r = px.scatter( pack_data, y='Residue', color='bgmm_anomaly', title="Residue",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_r.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_r, use_container_width=True )
-
-
-                    if show_pairplot:
-                        color_map = {False:'#636EFA', True:'#EF553B'}
-                        with st.spinner("Ploting the pairplot"):
-                            pack_data['bgmm_anomaly'] = pack_data['bgmm_anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
-                            fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'bgmm_anomaly']], diag='box',index='bgmm_anomaly',
-                                  colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
-                            st.plotly_chart ( fig_pp, use_container_width=True )
-
-            if model_lof:
-                with st.expander("LOCAL OUTLIER FACTOR"):
-                    plot_st, pi_st = st.columns((3,1))
-                    if model_ifor:
-                        pack_data['lof_anomaly'] = pack_data['lof_anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
-                        fig = px.scatter ( pack_data, y='Joules', color='lof_anomaly', title="Output Joule",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-
-
-                        fig.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )  # 'rgb(149, 223, 245)')
-                        plot_st.plotly_chart ( fig, use_container_width=True )
-
-                        fig_pi = px.pie ( pack_data, values='Joules', hover_name='lof_anomaly' , names='lof_anomaly', title='the ratio of anomaly vs normal',
-                              hole=.2, color_discrete_map={'Anomaly':'red', 'Normal':'blue'})
-                        pi_st.plotly_chart ( fig_pi, use_container_width=True )
-
-                    if show_force_n:
-
-                        fig_f = px.scatter( pack_data, y='Force_N', color='lof_anomaly', title="Force left",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_f.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_f, use_container_width=True )
-
-                    if show_force_n_1:
-
-                        fig_f_1 = px.scatter( pack_data, y='Force_N_1', color='lof_anomaly', title="Force right",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_f_1.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_f_1, use_container_width=True )
-
-                    if show_charge:
-
-                        fig_c = px.scatter( pack_data, y='Charge', color='lof_anomaly', title="Charge",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_c.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_c, use_container_width=True )
-
-
-                    if show_residue :
-                        fig_r = px.scatter( pack_data, y='Residue', color='lof_anomaly', title="Residue",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_r.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_r, use_container_width=True )
-
-                    if show_pairplot:
-                        color_map = {False:'#636EFA', True:'#EF553B'}
-                        with st.spinner("Ploting the pairplot"):
-                            pack_data['lof_anomaly'] = pack_data['lof_anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
-                            fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'lof_anomaly']], diag='box',index='lof_anomaly',
-                                  colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
-                            st.plotly_chart ( fig_pp, use_container_width=True )
-
-            if model_svm:
-                with st.expander("One-Class SVM"):
-                    plot_st, pi_st = st.columns((3,1))
-                    if model_ifor:
-                        pack_data['svm_anomaly'] = pack_data['svm_anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
-                        fig = px.scatter ( pack_data, y='Joules', color='svm_anomaly', title="Output Joule",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-
-
-                        fig.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )  # 'rgb(149, 223, 245)')
-                        plot_st.plotly_chart ( fig, use_container_width=True )
-
-                        fig_pi = px.pie ( pack_data, values='Joules', hover_name='svm_anomaly' , names='svm_anomaly', title='the ratio of anomaly vs normal',
-                              hole=.2, color_discrete_map={'Anomaly':'red', 'Normal':'blue'})
-                        pi_st.plotly_chart ( fig_pi, use_container_width=True )
-
-                    if show_force_n:
-
-                        fig_f = px.scatter( pack_data, y='Force_N', color='svm_anomaly', title="Force left",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_f.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_f, use_container_width=True )
-
-                    if show_force_n_1:
-
-                        fig_f_1 = px.scatter( pack_data, y='Force_N_1', color='svm_anomaly', title="Force right",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_f_1.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_f_1, use_container_width=True )
-
-                    if show_charge:
-
-                        fig_c = px.scatter( pack_data, y='Charge', color='svm_anomaly', title="Charge",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_c.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_c, use_container_width=True )
-
-
-                    if show_residue :
-                        fig_r = px.scatter( pack_data, y='Residue', color='svm_anomaly', title="Residue",
-                                            color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
-                        fig_r.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
-                        plot_st.plotly_chart ( fig_r, use_container_width=True )
-
-                    if show_pairplot:
-                        color_map = {False:'#636EFA', True:'#EF553B'}
-                        with st.spinner("Ploting the pairplot"):
-                            pack_data['svm_anomaly'] = pack_data['svm_anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
-                            fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'svm_anomaly']], diag='box',index='svm_anomaly',
-                                  colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
-                            st.plotly_chart ( fig_pp, use_container_width=True )
-
+           
 
             if model_repeat:
                 with st.expander("REPEAT FROM MACHINE"):
@@ -995,47 +685,47 @@ if uploaded_files is not None:
                 with st.expander("ISOLATION FOREST"):
                     pack_face1, pack_face2 = st.columns(2)
 
-                    # pack_data_non_dup['ifor_anomaly'] = pack_data_non_dup['ifor_anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
+                    # pack_data_non_dup['anomaly'] = pack_data_non_dup['anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
                     # face_1_df_1, face_1_df_2, face_2_df_1, face_2_df_2 = get_face(pack_data_non_dup)
                     # st.table(face_1_df_1)
                     # face_1_df_1_dup, face_1_df_2_dup, face_2_df_1_dup, face_2_df_2_dup = get_face(pack_data_dup)
 
-                    # pack_data_non_dup['ifor_anomaly'] = pack_data_non_dup['ifor_anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
-                    face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]# & (pack_data_non_dup['ifor_anomaly']==False)]
-                    face_1_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
-                    face_2_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==1)]# & (pack_data_non_dup['anomaly']==False)]
-                    face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
+                    # pack_data_non_dup['anomaly'] = pack_data_non_dup['anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
+                    face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]
+                    face_1_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==2)]
+                    face_2_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==1)]
+                    face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]
 
 
-                    face_1_df_1_dup = pack_data_dup[(pack_data_dup['Face']==1) & (pack_data_dup['Point']==1)]# & (pack_data_dup['ifor_anomaly']==False)]
-                    face_1_df_2_dup = pack_data_dup[(pack_data_dup['Face']==1) & (pack_data_dup['Point']==2)]# & (pack_data_dup['anomaly']==False)]
-                    face_2_df_1_dup = pack_data_dup[(pack_data_dup['Face']==2) & (pack_data_dup['Point']==1)]# & (pack_data_dup['anomaly']==False)]
-                    face_2_df_2_dup = pack_data_dup[(pack_data_dup['Face']==2) & (pack_data_dup['Point']==2)]# & (pack_data_dup['anomaly']==False)]
+                    face_1_df_1_dup = pack_data_dup[(pack_data_dup['Face']==1) & (pack_data_dup['Point']==1)]
+                    face_1_df_2_dup = pack_data_dup[(pack_data_dup['Face']==1) & (pack_data_dup['Point']==2)]
+                    face_2_df_1_dup = pack_data_dup[(pack_data_dup['Face']==2) & (pack_data_dup['Point']==1)]
+                    face_2_df_2_dup = pack_data_dup[(pack_data_dup['Face']==2) & (pack_data_dup['Point']==2)]
 
 
                     # st.table(face_1_df_1)
-                    face_1_1,face_1_1_annot, face_1_1_mask = sinusoid(face_1_df_1, (int(row_number/2), column_number), target='ifor_anomaly')
-                    face_1_2,face_1_2_annot, face_1_2_mask  = sinusoid(face_1_df_2, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_1_1,face_1_1_annot, face_1_1_mask = sinusoid(face_1_df_1, (int(row_number/2), column_number), target='anomaly')
+                    face_1_2,face_1_2_annot, face_1_2_mask  = sinusoid(face_1_df_2, (int(row_number/2), column_number), target='anomaly')
                     face_1 = face1_face2(face_1_1, face_1_2)
                     face_1_annot = face1_face2(face_1_1_annot, face_1_2_annot)
                     face_1_mask = face1_face2(face_1_1_mask, face_1_2_mask, mask=True) 
 
-                    face_2_1, face_2_1_annot, face_2_1_mask  = sinusoid(face_2_df_1, (int(row_number/2), column_number), target='ifor_anomaly')
-                    face_2_2, face_2_2_annot, face_2_2_mask = sinusoid(face_2_df_2, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_2_1, face_2_1_annot, face_2_1_mask  = sinusoid(face_2_df_1, (int(row_number/2), column_number), target='anomaly')
+                    face_2_2, face_2_2_annot, face_2_2_mask = sinusoid(face_2_df_2, (int(row_number/2), column_number), target='anomaly')
                     face_2 = face1_face2(face_2_1, face_2_2)
                     face_2_annot = face1_face2(face_2_1_annot, face_2_2_annot)
                     face_2_mask  = face1_face2(face_2_1_mask,  face_2_2_mask, mask=True)
 
 
-                    face_1_1_dup,face_1_1_annot_dup, face_1_1_mask_dup = sinusoid_duplicate(face_1_df_1_dup, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
-                    face_1_2_dup,face_1_2_annot_dup, face_1_2_mask_dup = sinusoid_duplicate(face_1_df_2_dup, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_1_1_dup,face_1_1_annot_dup, face_1_1_mask_dup = sinusoid_duplicate(face_1_df_1_dup, duplicate_count, (int(row_number/2), column_number), target='anomaly')
+                    face_1_2_dup,face_1_2_annot_dup, face_1_2_mask_dup = sinusoid_duplicate(face_1_df_2_dup, duplicate_count, (int(row_number/2), column_number), target='anomaly')
                     face_1_dup = face1_face2(face_1_1_dup, face_1_2_dup)
                     face_1_annot_dup = face1_face2(face_1_1_annot_dup, face_1_2_annot_dup)
                     face_1_mask_dup = face1_face2(face_1_1_mask_dup, face_1_2_mask_dup, mask=True)
 
              
-                    face_2_1_dup,face_2_1_annot_dup, face_2_1_mask_dup = sinusoid_duplicate(face_2_df_1_dup, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
-                    face_2_2_dup,face_2_2_annot_dup, face_2_2_mask_dup = sinusoid_duplicate(face_2_df_2_dup, duplicate_count, (int(row_number/2), column_number), target='ifor_anomaly')
+                    face_2_1_dup,face_2_1_annot_dup, face_2_1_mask_dup = sinusoid_duplicate(face_2_df_1_dup, duplicate_count, (int(row_number/2), column_number), target='anomaly')
+                    face_2_2_dup,face_2_2_annot_dup, face_2_2_mask_dup = sinusoid_duplicate(face_2_df_2_dup, duplicate_count, (int(row_number/2), column_number), target='anomaly')
                     face_2_dup = face1_face2(face_2_1_dup, face_2_2_dup)
                     face_2_annot_dup = face1_face2(face_2_1_annot_dup, face_2_2_annot_dup)
                     face_2_mask_dup = face1_face2(face_2_1_mask_dup, face_2_2_mask_dup, mask=True)
@@ -1075,141 +765,82 @@ if uploaded_files is not None:
                         fig_pack_2.savefig(ifor_face2)
 
 
-            if model_gmm:
-                with st.expander("GAUSSIAN MIXTURE"):
-                    pack_face1, pack_face2 = st.columns(2)
-                    pack_data_non_dup['gmm_anomaly'] = pack_data_non_dup['gmm_anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
-                    face_1_df_1, face_1_df_2, face_2_df_1, face_2_df_2 = get_face(pack_data_non_dup)
-
-                    face_1_df_1_val = face_1_df_1['gmm_anomaly'].values
-                    face_1_df_1_val = face_1_df_1_val.reshape(-1, column_number)
-
-                    face_1_df_2_val = face_1_df_2['gmm_anomaly'].values
-                    face_1_df_2_val = face_1_df_2_val.reshape(-1, column_number)
-
-                    face_2_df_1_val = face_2_df_1['gmm_anomaly'].values
-                    face_2_df_1_val = face_2_df_1_val.reshape(-1, column_number)
-
-                    face_2_df_2_val = face_2_df_2['gmm_anomaly'].values
-                    face_2_df_2_val = face_2_df_2_val.reshape(-1, column_number)
-
-
-                    fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
-                    fig_pack_2, face_ax_2 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
-                    face_1[0::2,:] = face_1_df_1_val
-                    face_1_maske[0::2,:] = False
-                    face_1[1::2,:] = face_1_df_2_val
-                    face_1_maske[1::2,:] = False
-
-                    face_2[0::2,:] = face_2_df_1_val
-                    face_2_maske[0::2,:] = False
-                    face_2[1::2,:] = face_2_df_2_val
-                    face_2_maske[1::2,:] = False
-
-
-                    sns.heatmap ( face_1, cmap= ListedColormap( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.8, square=True, ax=face_ax_1[0], cbar=False, mask=face_1_maske, \
-                                yticklabels= pack_label, annot=True, )
-                    face_ax_1[0].set_title ( "Face 1" )
-                        # cbar_kws={
-                        #     'pad': .001,
-                        #     'ticks': [0, 1],
-                        #     "shrink": 0.01
-                        # },
-
-                    sns.heatmap ( face_2, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.8, square=True, ax=face_ax_2[0], cbar=False, mask=face_2_maske, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
-                    face_ax_2[0].set_title ( "Face 2" )
-                    sns.heatmap ( face_1_repeat, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.8, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_repeat_mask, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
-                    face_ax_1[1].set_title ( "Reapeted face 1" )
-                    sns.heatmap ( face_2_repeat, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.8, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_repeat_mask, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
-                    face_ax_2[1].set_title ( "Reapeted face 2" )
-                    pack_face1.pyplot ( fig_pack_1,)# use_container_width=True )
-                    pack_face2.pyplot ( fig_pack_2,)# use_container_width=True )
-
-                    if pack_download:
-                        gmm_face1 = os.path.join(pack_path, 'gmm_face1')
-                        gmm_face2 = os.path.join(pack_path, 'gmm_face2')
-                        fig_pack_1.savefig(gmm_face1)
-                        fig_pack_2.savefig(gmm_face2)
-
             if model_repeat:
-                with st.expander("GAUSSIAN MIXTURE"):
+                with st.expander("MACHINE REPEATE"):
                     pack_face1, pack_face2 = st.columns(2)
-                    pack_data_non_dup['anomaly'] = pack_data_non_dup['anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
-                    face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]# & (pack_data_non_dup['anomaly']==False)]
-                    face_1_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
-                    face_2_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==1)]# & (pack_data_non_dup['anomaly']==False)]
-                    face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]# & (pack_data_non_dup['anomaly']==False)]
-                    face_2_df = pack_data_non_dup[pack_data_non_dup['Face']==2]
 
-                    face_1_df_1_val = face_1_df_1['anomaly'].values
-                    face_1_df_1_val = face_1_df_1_val.reshape(-1, column_number)
+                    face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]
+                    face_1_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==2)]
+                    face_2_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==1)]
+                    face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]
 
-                    face_1_df_2_val = face_1_df_2['anomaly'].values
-                    face_1_df_2_val = face_1_df_2_val.reshape(-1, column_number)
 
-                    face_2_df_1_val = face_2_df_1['anomaly'].values
-                    face_2_df_1_val = face_2_df_1_val.reshape(-1, column_number)
+                    face_1_df_1_dup = pack_data_dup[(pack_data_dup['Face']==1) & (pack_data_dup['Point']==1)]
+                    face_1_df_2_dup = pack_data_dup[(pack_data_dup['Face']==1) & (pack_data_dup['Point']==2)]
+                    face_2_df_1_dup = pack_data_dup[(pack_data_dup['Face']==2) & (pack_data_dup['Point']==1)]
+                    face_2_df_2_dup = pack_data_dup[(pack_data_dup['Face']==2) & (pack_data_dup['Point']==2)]
 
-                    face_2_df_2_val = face_2_df_2['anomaly'].values
-                    face_2_df_2_val = face_2_df_2_val.reshape(-1, column_number)
 
+                    # st.table(face_1_df_1)
+                    face_1_1,face_1_1_annot, face_1_1_mask = sinusoid(face_1_df_1, (int(row_number/2), column_number), target='anomaly')
+                    face_1_2,face_1_2_annot, face_1_2_mask  = sinusoid(face_1_df_2, (int(row_number/2), column_number), target='anomaly')
+                    face_1 = face1_face2(face_1_1, face_1_2)
+                    face_1_annot = face1_face2(face_1_1_annot, face_1_2_annot)
+                    face_1_mask = face1_face2(face_1_1_mask, face_1_2_mask, mask=True) 
+
+                    face_2_1, face_2_1_annot, face_2_1_mask  = sinusoid(face_2_df_1, (int(row_number/2), column_number), target='anomaly')
+                    face_2_2, face_2_2_annot, face_2_2_mask = sinusoid(face_2_df_2, (int(row_number/2), column_number), target='anomaly')
+                    face_2 = face1_face2(face_2_1, face_2_2)
+                    face_2_annot = face1_face2(face_2_1_annot, face_2_2_annot)
+                    face_2_mask  = face1_face2(face_2_1_mask,  face_2_2_mask, mask=True)
+
+
+                    face_1_1_dup,face_1_1_annot_dup, face_1_1_mask_dup = sinusoid_duplicate(face_1_df_1_dup, duplicate_count, (int(row_number/2), column_number), target='anomaly')
+                    face_1_2_dup,face_1_2_annot_dup, face_1_2_mask_dup = sinusoid_duplicate(face_1_df_2_dup, duplicate_count, (int(row_number/2), column_number), target='anomaly')
+                    face_1_dup = face1_face2(face_1_1_dup, face_1_2_dup)
+                    face_1_annot_dup = face1_face2(face_1_1_annot_dup, face_1_2_annot_dup)
+                    face_1_mask_dup = face1_face2(face_1_1_mask_dup, face_1_2_mask_dup, mask=True)
+
+             
+                    face_2_1_dup,face_2_1_annot_dup, face_2_1_mask_dup = sinusoid_duplicate(face_2_df_1_dup, duplicate_count, (int(row_number/2), column_number), target='anomaly')
+                    face_2_2_dup,face_2_2_annot_dup, face_2_2_mask_dup = sinusoid_duplicate(face_2_df_2_dup, duplicate_count, (int(row_number/2), column_number), target='anomaly')
+                    face_2_dup = face1_face2(face_2_1_dup, face_2_2_dup)
+                    face_2_annot_dup = face1_face2(face_2_1_annot_dup, face_2_2_annot_dup)
+                    face_2_mask_dup = face1_face2(face_2_1_mask_dup, face_2_2_mask_dup, mask=True)
+
+                    
 
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
                     fig_pack_2, face_ax_2 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
-                    face_1[0::2,:] = face_1_df_1_val
-                    face_1_maske[0::2,:] = False
-                    face_1[1::2,:] = face_1_df_2_val
-                    face_1_maske[1::2,:] = False
-
-                    face_2[0::2,:] = face_2_df_1_val
-                    face_2_maske[0::2,:] = False
-                    face_2[1::2,:] = face_2_df_2_val
-                    face_2_maske[1::2,:] = False
-
+ 
 
                     sns.heatmap ( face_1, cmap= ListedColormap( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.8, square=True, ax=face_ax_1[0], cbar=False, mask=face_1_maske, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
+                                linewidths=0.2, square=True, ax=face_ax_1[0], cbar=False, mask=face_1_mask, \
+                                yticklabels=pack_label, annot=face_1_annot, )
                     face_ax_1[0].set_title ( "Face 1" )
-                        # cbar_kws={
-                        #     'pad': .001,
-                        #     'ticks': [0, 1],
-                        #     "shrink": 0.01
-                        # },
 
                     sns.heatmap ( face_2, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.8, square=True, ax=face_ax_2[0], cbar=False, mask=face_2_maske, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
+                                linewidths=0.2, square=True, ax=face_ax_2[0], cbar=False, mask=face_2_mask, \
+                                yticklabels=pack_label, annot= face_2_annot, )
                     face_ax_2[0].set_title ( "Face 2" )
-                    sns.heatmap ( face_1_repeat, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.8, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_repeat_mask, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
-                    face_ax_1[1].set_title ( "Reapeted face 1" )
-                    sns.heatmap ( face_2_repeat, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                                linewidths=0.8, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_repeat_mask, \
-                                yticklabels=['cell_1', '', 'cell_2', '', 'cell_3', '', 'cell_4', '', 'cell_5', '', 'cell_6', '',
-                                            'cell_7', ''], annot=True, )
+
+                    sns.heatmap ( face_1_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
+                                linewidths=0.2, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_mask_dup, \
+                                yticklabels=pack_label, annot= face_1_annot_dup, )
+                    face_ax_1[1].set_title ( "Reapeteeeed face 1" )
+
+                    sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
+                                linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
+                                yticklabels=pack_label, annot= face_1_annot_dup, )
                     face_ax_2[1].set_title ( "Reapeted face 2" )
-                    pack_face1.pyplot ( fig_pack_1,)# use_container_width=True )
-                    pack_face2.pyplot ( fig_pack_2,)# use_container_width=True )
+                    
+                    pack_face1.pyplot ( fig_pack_1)#, use_container_width=True )
+                    pack_face2.pyplot ( fig_pack_2)#, use_container_width=True )
                     if pack_download:
-                        repeat_face1 = os.path.join(pack_path, 'repeat_face1')
-                        repeat_face2 = os.path.join(pack_path, 'repeat_face2')
-                        fig_pack_1.savefig(repeat_face1)
-                        fig_pack_2.savefig(repeat_face2)
+                        ifor_face1 = os.path.join(pack_path, 'ifor_face1')
+                        ifor_face2 = os.path.join(pack_path, 'ifor_face2')
+                        fig_pack_1.savefig(ifor_face1)
+                        fig_pack_2.savefig(ifor_face2)
 
 #### SAVING THE DATE INTO THE LOCAL MACHINE
     if save_submit:
