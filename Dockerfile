@@ -1,7 +1,10 @@
 FROM python:3.8
 
 # Install Poetry
-RUN pip install --upgrade pip && \
+# RUN pip install --upgrade pip && \
+RUN pip install --upgrade pip wheel && \
+    # pip install backports.zoneinfo && \
+    pip install backports.zoneinfo==0.2.1 && \
     pip install poetry
 
 # Copy project files and install dependencies
