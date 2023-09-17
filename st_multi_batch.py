@@ -7,7 +7,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import time
+import shap 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
@@ -219,7 +219,7 @@ def get_logger(save:bool=True):
     else:
         with open(SADS_CONFIG_FILE) as infile:
             return json.load(infile)
-
+st.set_option('deprecation.showPyplotGlobalUse', False)
 with st.sidebar.container():
     st.title("SADS settings input")
     training_type =     st.radio(
@@ -472,6 +472,13 @@ if uploaded_files is not None:
                     ifor_cluster = ifor.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
+
+                    # explainer = shap.TreeExplainer(ifor['clf'], feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] )
+
+                    # shap_values = explainer.shap_values(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values )
+                   
+                    # st.pyplot( shap.summary_plot(shap_values, pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values,  feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] ), bbox_inches='tight')
+                    # # st.pyplot(shap.plots.waterfall(exp))
  
             else:
                 if model_ifor:
@@ -679,6 +686,21 @@ if uploaded_files is not None:
                         [1.0, 'rgb(255, 0, 0)']]
             if model_ifor:
                 with st.expander("ISOLATION FOREST"):
+                    featur_names = ['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']
+                    
+                    explainer = shap.TreeExplainer(ifor['clf'] , feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] )
+
+                    shap_values = explainer.shap_values(pack_data[featur_names].values )
+                   
+                    # # shap.summary_plot(shap_values, pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values,  feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] )
+                    # st.pyplot( shap.summary_plot(shap_values, pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values,  feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] ), bbox_inches='tight')
+                    # shap.plots.beeswarm()
+                    # st.pyplot(shap.plots.waterfall(exp))
+                    st.pyplot( shap.summary_plot(shap_values, pack_data[featur_names].values,  feature_names=featur_names,plot_type="bar" ), bbox_inches='tight')
+                    # st.pyplot( shap.bar_plot(shap_values, pack_data[featur_names].values,  feature_names=featur_names ), bbox_inches='tight')
+                    # st.pyplot(shap.plots.beeswarm(shap_values, pack_data[featur_names].values ))
+                    # st.pyplot(shap.plots.waterfall(shap_values, pack_data[featur_names].values ))
+ 
                     pack_face1, pack_face2 = st.columns(2)
 
                     face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]
