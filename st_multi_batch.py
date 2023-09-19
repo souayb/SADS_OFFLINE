@@ -91,7 +91,7 @@ def create_download_zip(zip_directory, zip_path, filename='foo.zip'):
 
 # st.markdown(new_title, unsafe_allow_html=True)
 
-st.cache(suppress_st_warning=True)
+# st.cache(suppress_st_warning=True)
 # @st.experimental_memo(suppress_st_warning=True)
 def data_reader(dataPath:str) -> pd.DataFrame :
     df = pd.read_csv(dataPath, decimal=',')
@@ -331,11 +331,11 @@ with st.sidebar.container():
             st.subheader("Plot setting")
             chart_left, chart_right = st.columns(2)
             show_joules = chart_left.checkbox('Joules', value=True)
-            show_force_n = chart_left.checkbox('Force right', value=False)
-            show_pairplot = chart_left.checkbox('Pairplot', value=False)
-            show_force_n_1 = chart_right.checkbox('Force left', value=False)
-            show_residue = chart_right.checkbox('Residue', value=False)
-            show_charge = chart_right.checkbox('Charge', value=False)
+            show_force_n = chart_left.checkbox('Force right', value=True)
+            show_pairplot = chart_left.checkbox('Pairplot', value=True)
+            show_force_n_1 = chart_right.checkbox('Force left', value=True)
+            show_residue = chart_right.checkbox('Residue', value=True)
+            show_charge = chart_right.checkbox('Charge', value=True)
 
 
         submitted = st.form_submit_button('Apply')
@@ -353,11 +353,11 @@ with st.sidebar.container():
         
     
 if color_blind :
-        new_title = f"""<center> <h2> <p style="font-family:fantasy; color:{color_palette['good']}; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Online mode </p> </h2></center>"""
+        new_title = f"""<center> <h2> <p style="font-family:fantasy; color:{color_palette['good']}; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service</p> </h2></center>"""
         st.markdown(new_title, unsafe_allow_html=True)
 
 else:
-    new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service: Online mode </p> </h2></center>'
+    new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service</p> </h2></center>'
     st.markdown(new_title, unsafe_allow_html=True)
 
 # pack_label = ['Cell_{i}'.format(i=i) for i in range(1, row_number + 1)]
@@ -372,7 +372,8 @@ def get_face(pack_data_non_dup):
     return face_1_df_1,face_1_df_2,face_2_df_1,face_2_df_2
 
 if uploaded_files is not None:
-
+    if 'options' in st.session_state:
+        st.session_state.pop('options')
     if pathlib.Path ( uploaded_files.name ).suffix not in ['.csv', '.txt']:
         st.error ( "the file need to be in one the follwing format ['.csv', '.txt'] not {}".format (
             pathlib.Path ( uploaded_files.name ).suffix ) )
@@ -389,10 +390,6 @@ if uploaded_files is not None:
             IF = pickle.load(open('/app/model.pkl', 'rb'))
         else :
             SADS_CONFIG = get_logger(save=False)
-            # SHIFT_RESULT = SADS_CONFIG['drift_result']
-            # set_trace()
-            # testing drift
-            # set_trace()
             to_test = np.hstack([np.array(SADS_CONFIG['Joules'][:500]), new_joule[:500]])
             test_resutl = utils.pettitt_test(to_test, alpha=0.8)
             if test_resutl.cp >= 500 and test_resutl.cp <= 502:
@@ -445,7 +442,6 @@ if uploaded_files is not None:
             st.experimental_rerun()
         if training_type == 'Pack':
             pack_data = data[data['Barcode']== ms[-1]]
-            pack_ = data.groupby(['Barcode', 'Face', 'Cell', 'Point'], as_index=False).size()
 
         ## TRAINING THE MODEL
 
@@ -550,12 +546,6 @@ if uploaded_files is not None:
                 allow_unsafe_jscode=True, #Set it to True to allow jsfunction to be injected
                 enable_enterprise_modules=enable_enterprise_modules
                 )
-            # grid_table = AgGrid(face_1_df_1 , height=500,  gridOptions=gridoptions,
-            #                                 update_mode=GridUpdateMode.SELECTION_CHANGED, allow_unsafe_jscode=True)
-            #             selected_row = grid_table["selected_rows"]
-            #             st.table(selected_row)
-            # df = grid_response['data']
-            # selected = grid_response['selected_rows']
             if table_download:
                 table_save = os.path.join(pack_path, 'table_vew.csv')
                 pack_data.to_csv(table_save)
@@ -607,7 +597,8 @@ if uploaded_files is not None:
                                             color_discrete_map={'Anomaly': 'red',  'Normal': 'blue'} )
                         fig_r.update_layout ( width=1500, height=350, plot_bgcolor='rgb(131, 193, 212)' )
                         plot_st.plotly_chart ( fig_r, use_container_width=True )
-
+                    
+                
                     if show_pairplot:
                         color_map = {False:'#636EFA', True:'#EF553B'}
                         with st.spinner("Ploting the pairplot"):
@@ -615,9 +606,11 @@ if uploaded_files is not None:
                             fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'ifor_anomaly']], diag='box',index='ifor_anomaly',
                                   colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
                             st.plotly_chart ( fig_pp, use_container_width=True )
-           
+
+                     
 
             if model_repeat:
+                
                 with st.expander("REPEAT FROM MACHINE"):
                     plot_st, pi_st = st.columns((3,1))
                     pack_data['repeat_plot'] = pack_data['anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
@@ -670,8 +663,20 @@ if uploaded_files is not None:
                                   colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
                             st.plotly_chart ( fig_pp, use_container_width=True )
 
+            with st.expander("FEATURE IMPORTANCE"):
+                    
+                ll, magnus = st.columns(2)
+                
+                feature_names = ['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']
+                explainer = shap.TreeExplainer(ifor['clf'] , feature_names= feature_names )
 
-
+                shap_values = explainer.shap_values(pack_data[feature_names].values, )
+                # shap_bar = shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names=feature_names,plot_type="bar" )
+                # shap_violine= shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names= feature_names)
+                ll.pyplot(shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names=feature_names,plot_type="bar" ), bbox_inches='tight')
+                magnus.pyplot(shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names= feature_names), bbox_inches='tight')
+   
+           
         with pack_view :
             if training_type =='Whole':
                 pack_data = data[data['Barcode']== ms[-1]]
@@ -679,30 +684,27 @@ if uploaded_files is not None:
             duplicate_count = pack_data.groupby(['Barcode', 'Face', 'Cell', 'Point'], as_index=False).size()
             pack_data_non_dup = pack_data[~pack_data.duplicated(subset=['Barcode', 'Face', 'Cell', 'Point'], keep= 'last')]
             pack_data_dup = pack_data[pack_data.duplicated(subset=['Barcode',  'Face', 'Cell', 'Point'], keep= 'last')]
-            
  
             colorscale = [[0.0, 'rgb(169,169,169)'],
                         [0.5, 'rgb(0, 255, 0)'],
                         [1.0, 'rgb(255, 0, 0)']]
-            if model_ifor:
-                with st.expander("ISOLATION FOREST"):
-                    featur_names = ['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']
+            with st.expander("FEATURE IMPORTANCE"):
+                    ll, magnus = st.columns(2)
                     
-                    explainer = shap.TreeExplainer(ifor['clf'] , feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] )
+                    feature_names = ['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']
+                    explainer = shap.TreeExplainer(ifor['clf'] , feature_names= feature_names )
 
-                    shap_values = explainer.shap_values(pack_data[featur_names].values )
-                   
-                    # # shap.summary_plot(shap_values, pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values,  feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] )
-                    # st.pyplot( shap.summary_plot(shap_values, pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values,  feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] ), bbox_inches='tight')
-                    # shap.plots.beeswarm()
-                    # st.pyplot(shap.plots.waterfall(exp))
-                    st.pyplot( shap.summary_plot(shap_values, pack_data[featur_names].values,  feature_names=featur_names,plot_type="bar" ), bbox_inches='tight')
-                    # st.pyplot( shap.bar_plot(shap_values, pack_data[featur_names].values,  feature_names=featur_names ), bbox_inches='tight')
-                    # st.pyplot(shap.plots.beeswarm(shap_values, pack_data[featur_names].values ))
-                    # st.pyplot(shap.plots.waterfall(shap_values, pack_data[featur_names].values ))
- 
+                    shap_values = explainer.shap_values(pack_data[feature_names].values, )
+                    # shap_bar = shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names=feature_names,plot_type="bar" )
+                    # shap_violine= shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names= feature_names)
+                    ll.pyplot(shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names=feature_names,plot_type="bar" ), bbox_inches='tight')
+                    magnus.pyplot(shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names= feature_names), bbox_inches='tight')
+            if model_ifor:
+               
+                with st.expander("ISOLATION FOREST"):
+                     
                     pack_face1, pack_face2 = st.columns(2)
-
+                   
                     face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]
                     face_1_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==2)]
                     face_2_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==1)]
@@ -761,21 +763,25 @@ if uploaded_files is not None:
                     sns.heatmap ( face_1_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.2, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_mask_dup, \
                                 yticklabels=pack_label, annot= face_1_annot_dup, )
-                    face_ax_1[1].set_title ( "Reapeteeeed face 1" )
+                    face_ax_1[1].set_title ( "Reapeted face 1" )
 
                     sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
                                 yticklabels=pack_label, annot= face_1_annot_dup, )
                     face_ax_2[1].set_title ( "Reapeted face 2" )
                     
-                    pack_face1.pyplot ( fig_pack_1)#, use_container_width=True )
-                    pack_face2.pyplot ( fig_pack_2)#, use_container_width=True )
+                    pack_face1.pyplot ( fig_pack_1)
+                    pack_face2.pyplot ( fig_pack_2)
+
+                    
                     if pack_download:
                         ifor_face1 = os.path.join(pack_path, 'ifor_face1')
                         ifor_face2 = os.path.join(pack_path, 'ifor_face2')
                         fig_pack_1.savefig(ifor_face1)
                         fig_pack_2.savefig(ifor_face2)
 
+                
+                    
 
             if model_repeat:
                 with st.expander("MACHINE REPEATE"):
@@ -853,6 +859,19 @@ if uploaded_files is not None:
                         ifor_face2 = os.path.join(pack_path, 'ifor_face2')
                         fig_pack_1.savefig(ifor_face1)
                         fig_pack_2.savefig(ifor_face2)
+        # with st.expander("FEATURE IMPORTANCE"):
+                # ll, magnus = st.columns(2)
+                
+                # feature_names = ['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']
+                # explainer = shap.TreeExplainer(ifor['clf'] , feature_names= feature_names )
+
+                # shap_values = explainer.shap_values(pack_data[feature_names].values, )
+                # shap_bar = shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names=feature_names,plot_type="bar" )
+                # shap_violine= shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names= feature_names)
+                # st.pyplot(shap_bar, bbox_inches='tight')
+                # st.pyplot(shap_violine, bbox_inches='tight')
+                        
+
 
 #### SAVING THE DATE INTO THE LOCAL MACHINE
     if save_submit:
