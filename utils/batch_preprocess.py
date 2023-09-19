@@ -39,9 +39,9 @@ class Preprocessing:
         df["Face_Cell_Point"] = df["Face"].astype(str) + "_" + df["Cell"].astype(str) + "_" + df["Point"].astype(str)
         return df
 
-    def _add_weekday(self, df: pd.DataFrame) -> pd.DataFrame:
-        df['weekday'] = df.ts.dt.weekday
-        return df
+    # def _add_weekday(self, df: pd.DataFrame) -> pd.DataFrame:
+    #     df['weekday'] = df.ts.dt.weekday
+    #     return df
 
     def _get_good_bad(self, df: pd.DataFrame):
         df['anomaly'] = df.duplicated(subset=['BarCode','Face_Cell_Point'], keep='last')
@@ -52,6 +52,6 @@ class Preprocessing:
         # df_out = self.apply_filter(df)
         df_out = self._clean_weld_data(df, self.time_col)
         df_out = self._add_location(df_out)
-        df_out = self._add_weekday(df_out)
+        # df_out = self._add_weekday(df_out)
         df_out = self._get_good_bad(df_out)
         return df_out, self._get_faulty_barcodes(df_out)
