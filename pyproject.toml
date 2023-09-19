@@ -6,7 +6,7 @@ authors = ["Souaybou Bagayoko <souaybou.bagayoko@ginkgo-analytics.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-streamlit = "^1.8.1"
+streamlit = "^1.9.1"
 matplotlib = "^3.6.3"
 seaborn = "^0.12.2"
 plotly = "^5.12.0"
