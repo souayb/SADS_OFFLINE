@@ -7,3 +7,12 @@ sads_data/
 # IDE
 .idea/
 .vscode/
+
+# virtualenv
+venv/
+
+# python cache
+__pycache__/*
+__pycache__
+*.py[cod]
+*.pyc
