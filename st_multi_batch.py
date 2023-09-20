@@ -471,13 +471,6 @@ if uploaded_files is not None:
                     pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
 
-                    # explainer = shap.TreeExplainer(ifor['clf'], feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] )
-
-                    # shap_values = explainer.shap_values(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values )
-                   
-                    # st.pyplot( shap.summary_plot(shap_values, pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values,  feature_names=['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1'] ), bbox_inches='tight')
-                    # # st.pyplot(shap.plots.waterfall(exp))
- 
             else:
                 if model_ifor:
                     ifor = utils.train_model(data, model_type='ifor')
