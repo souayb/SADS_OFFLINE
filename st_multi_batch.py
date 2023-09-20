@@ -91,7 +91,7 @@ def create_download_zip(zip_directory, zip_path, filename='foo.zip'):
 
 # st.markdown(new_title, unsafe_allow_html=True)
 
-# st.cache(suppress_st_warning=True)
+st.cache(suppress_st_warning=True)
 # @st.experimental_memo(suppress_st_warning=True)
 def data_reader(dataPath:str) -> pd.DataFrame :
     df = pd.read_csv(dataPath, decimal=',')
