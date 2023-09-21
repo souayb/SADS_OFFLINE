@@ -160,7 +160,7 @@ def sinusoid_duplicate(data, data_dup,  matrix_shape, target:str='anomaly'):
             # l1 += 1
         if dd['size'].values > 1:
             matrix[l1, l2] = row[target]
-            matrix_annot[l1, l2] = dd['size']-1
+            matrix_annot[l1, l2] = row['Cell']
             matrix_mask[l1, l2] =  False
     return matrix, matrix_annot, matrix_mask
 
@@ -677,6 +677,7 @@ if uploaded_files is not None:
                 pack_data = data[data['Barcode']== ms[-1]]
             st.subheader(f"Pack view : -- {ms[-1]}")
             duplicate_count = pack_data.groupby(['Barcode', 'Face', 'Cell', 'Point'], as_index=False).size()
+            st.dataframe(duplicate_count)
             pack_data_non_dup = pack_data[~pack_data.duplicated(subset=['Barcode', 'Face', 'Cell', 'Point'], keep= 'last')]
             pack_data_dup = pack_data[pack_data.duplicated(subset=['Barcode',  'Face', 'Cell', 'Point'], keep= 'last')]
  
@@ -739,8 +740,6 @@ if uploaded_files is not None:
                     face_2_annot_dup = face1_face2(face_2_1_annot_dup, face_2_2_annot_dup)
                     face_2_mask_dup = face1_face2(face_2_1_mask_dup, face_2_2_mask_dup, mask=True)
 
-                    
-
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
                     fig_pack_2, face_ax_2 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
  
@@ -762,7 +761,7 @@ if uploaded_files is not None:
 
                     sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
-                                yticklabels=pack_label, annot= face_1_annot_dup, )
+                                yticklabels=pack_label, annot= face_2_annot_dup, )
                     face_ax_2[1].set_title ( "Reapeted face 2" )
                     
                     pack_face1.pyplot ( fig_pack_1)
@@ -821,7 +820,7 @@ if uploaded_files is not None:
                     face_2_annot_dup = face1_face2(face_2_1_annot_dup, face_2_2_annot_dup)
                     face_2_mask_dup = face1_face2(face_2_1_mask_dup, face_2_2_mask_dup, mask=True)
 
-                    
+                   
 
                     fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
                     fig_pack_2, face_ax_2 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
@@ -844,7 +843,7 @@ if uploaded_files is not None:
 
                     sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
-                                yticklabels=pack_label, annot= face_1_annot_dup, )
+                                yticklabels=pack_label, annot= face_2_annot_dup, )
                     face_ax_2[1].set_title ( "Reapeted face 2" )
                     
                     pack_face1.pyplot ( fig_pack_1)#, use_container_width=True )
@@ -854,18 +853,6 @@ if uploaded_files is not None:
                         ifor_face2 = os.path.join(pack_path, 'ifor_face2')
                         fig_pack_1.savefig(ifor_face1)
                         fig_pack_2.savefig(ifor_face2)
-        # with st.expander("FEATURE IMPORTANCE"):
-                # ll, magnus = st.columns(2)
-                
-                # feature_names = ['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']
-                # explainer = shap.TreeExplainer(ifor['clf'] , feature_names= feature_names )
-
-                # shap_values = explainer.shap_values(pack_data[feature_names].values, )
-                # shap_bar = shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names=feature_names,plot_type="bar" )
-                # shap_violine= shap.summary_plot(shap_values, pack_data[feature_names].values,  feature_names= feature_names)
-                # st.pyplot(shap_bar, bbox_inches='tight')
-                # st.pyplot(shap_violine, bbox_inches='tight')
-                        
 
 
 #### SAVING THE DATE INTO THE LOCAL MACHINE

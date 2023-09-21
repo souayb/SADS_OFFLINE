@@ -27,4 +27,4 @@ ENV PYTHONPATH=/app
 EXPOSE 8501
 
 # Set the entry point for the Docker container
-ENTRYPOINT ["streamlit", "run", "--server.headless=true", "--server.port=8501", "--server.fileWatcherType=none", "--browser.gatherUsageStats=false", "st_multi_batch.py"]
+ENTRYPOINT ["streamlit", "run", "--server.headless=true", "--server.port=8501", "st_multi_batch.py"]
