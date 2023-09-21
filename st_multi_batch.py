@@ -677,7 +677,6 @@ if uploaded_files is not None:
                 pack_data = data[data['Barcode']== ms[-1]]
             st.subheader(f"Pack view : -- {ms[-1]}")
             duplicate_count = pack_data.groupby(['Barcode', 'Face', 'Cell', 'Point'], as_index=False).size()
-            st.dataframe(duplicate_count)
             pack_data_non_dup = pack_data[~pack_data.duplicated(subset=['Barcode', 'Face', 'Cell', 'Point'], keep= 'last')]
             pack_data_dup = pack_data[pack_data.duplicated(subset=['Barcode',  'Face', 'Cell', 'Point'], keep= 'last')]
  
