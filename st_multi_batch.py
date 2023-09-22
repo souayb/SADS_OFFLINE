@@ -383,7 +383,7 @@ if uploaded_files is not None:
         st.info('Preporcesssing started ')
         data, prob_lists = data_reader(uploaded_files)
         if prob_lists:
-            st.write('The following barcode has been detected as a problem : ', prob_lists)
+            st.write('The following barcodes do not meet the welding requirements:', prob_lists)
         new_joule = data['Joules'].values
         st.success('Preprocessing complete !')
         if not os.path.exists(SADS_CONFIG_FILE):
