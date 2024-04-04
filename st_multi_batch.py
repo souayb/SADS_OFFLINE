@@ -291,13 +291,13 @@ with st.sidebar.container():
             # update_mode_value = GridUpdateMode.__members__[update_mode]
 
             #enterprise modules
-            enable_enterprise_modules = st.checkbox("Enable Enterprise Modules")
+            enable_enterprise_modules = st.checkbox("Enable enterprise modules")
             if enable_enterprise_modules:
                 enable_sidebar =st.checkbox("Enable grid sidebar", value=False)
             else:
                 enable_sidebar = False
             #features
-            fit_columns_on_grid_load = st.checkbox("Fit Grid Columns on Load")
+            fit_columns_on_grid_load = st.checkbox("Fit grid columns during load")
 
             enable_selection=st.checkbox("Enable row selection", value=True)
 
@@ -327,7 +327,7 @@ with st.sidebar.container():
                     paginationPageSize = st.number_input("Page size", value=5, min_value=0, max_value=sample_size)
                 st.text("___")
 
-        with st.expander('Plot control'):
+        with st.expander("Plot control"):
             st.subheader("Plot setting")
             chart_left, chart_right = st.columns(2)
             show_joules = chart_left.checkbox('Joules', value=True)
@@ -342,10 +342,10 @@ with st.sidebar.container():
 
     with st.form('Saving setting'):
 
-        with st.expander('Model saving input'):
-            st.subheader("Save following SADS results")
+        with st.expander('Save Model results'):
+            st.subheader("Save the following SADS results")
             check_left, check_right = st.columns(2)
-            pack_download = check_left.checkbox('pack images', value=True )
+            pack_download = check_left.checkbox('Pack images', value=True )
             table_download = check_right.checkbox('The table', value=True)
             chart_download = check_left.checkbox('The chart', value=True)
         save_button, save_zip = st.columns(2)
@@ -353,11 +353,11 @@ with st.sidebar.container():
         
     
 if color_blind :
-        new_title = f"""<center> <h2> <p style="font-family:fantasy; color:{color_palette['good']}; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service</p> </h2></center>"""
+        new_title = f"""<center> <h2> <p style="font-family:fantasy; color:{color_palette['good']}; font-size: 24px;"> SADS: Shop-floor Anomaly Detection System</p> </h2></center>"""
         st.markdown(new_title, unsafe_allow_html=True)
 
 else:
-    new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection Service</p> </h2></center>'
+    new_title = '<center> <h2> <p style="font-family:fantasy; color:#82270c; font-size: 24px;"> SADS: Shop-floor Anomaly Detection System</p> </h2></center>'
     st.markdown(new_title, unsafe_allow_html=True)
 
 # pack_label = ['Cell_{i}'.format(i=i) for i in range(1, row_number + 1)]
@@ -375,17 +375,17 @@ if uploaded_files is not None:
     if 'options' in st.session_state:
         st.session_state.pop('options')
     if pathlib.Path ( uploaded_files.name ).suffix not in ['.csv', '.txt']:
-        st.error ( "the file need to be in one the follwing format ['.csv', '.txt'] not {}".format (
+        st.error ( "the file needs to be in one of the follwing formats ['.csv', '.txt'] not {}".format (
             pathlib.Path ( uploaded_files.name ).suffix ) )
-        raise Exception ( 'please upload the right file ' )
+        raise Exception ( 'please upload the correct file ' )
 
-    with st.spinner('Wait for preprocess and model training'):
-        st.info('Preporcesssing started ')
+    with st.spinner('Wait for preprocessing and model training to finish'):
+        st.info('Preprocessing started ')
         data, prob_lists = data_reader(uploaded_files)
         if prob_lists:
             st.write('The following barcodes do not meet the welding requirements:', prob_lists)
         new_joule = data['Joules'].values
-        st.success('Preprocessing complete !')
+        st.success('Preprocessing complete!')
         if not os.path.exists(SADS_CONFIG_FILE):
             JOULES = new_joule.tolist()
             get_logger(save=True)
@@ -395,20 +395,20 @@ if uploaded_files is not None:
             to_test = np.hstack([np.array(SADS_CONFIG['Joules'][:500]), new_joule[:500]])
             test_resutl = utils.pettitt_test(to_test, alpha=0.8)
             if test_resutl.cp >= 500 and test_resutl.cp <= 502:
-                st.write("DRIFT FOUND NEED THE RETRAIN THE MODEL")
+                st.write("DRIFT FOUND, NEED TO RETRAIN THE MODEL")
                 JOULES = new_joule.tolist()
                 SHIFT_DETECTED = True
                 get_logger(save=True)
                 if training_type=='Whole':
-                    with st.spinner('Training...: This may take some time'):
+                    with st.spinner('Training... this may take some time'):
                         IF = utils.train_model(data=data)
                         pickle.dump(IF, open('model.pkl', 'wb'))
-                        st.success('Training completed !')
+                        st.success('Training completed!')
 
             else :
                 # JOULES = new_joule.tolist()
                 # get_logger(save=True)
-                st.write(" NO DRIFT FOUND")
+                st.write("NO DRIFT DETECTED")
                 IF = pickle.load(open('model.pkl', 'rb'))
 
     init_options = data['Barcode'].unique().tolist()
@@ -596,7 +596,7 @@ if uploaded_files is not None:
                 
                     if show_pairplot:
                         color_map = {False:'#636EFA', True:'#EF553B'}
-                        with st.spinner("Ploting the pairplot"):
+                        with st.spinner("Plotting pairplot"):
                             # pack_data['ifor_plot'] = pack_data['ifor_plot'].apply ( lambda x: False if x == 'Normal' else  True )
                             fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'ifor_anomaly']], diag='box',index='ifor_anomaly',
                                   colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
@@ -606,7 +606,7 @@ if uploaded_files is not None:
 
             if model_repeat:
                 
-                with st.expander("REPEAT FROM MACHINE"):
+                with st.expander("MACHINE REPETITION"):
                     plot_st, pi_st = st.columns((3,1))
                     pack_data['repeat_plot'] = pack_data['anomaly'].apply ( lambda x: 'Normal' if x == False else "Anomaly" )
                     if model_ifor:
@@ -652,7 +652,7 @@ if uploaded_files is not None:
 
                     if show_pairplot:
                         color_map = {False:'#636EFA', True:'#EF553B'}
-                        with st.spinner("Ploting the pairplot"):
+                        with st.spinner("Plotting pairplot"):
                             # pack_data['anomaly'] = pack_data['anomaly'].apply ( lambda x: False if x == 'Normal' else  True )
                             fig_pp = ff.create_scatterplotmatrix(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1', 'anomaly']], diag='box',index='anomaly',
                                   colormap=color_map, colormap_type='cat', height=700, width=700, title='PAIRPLOT')
@@ -756,12 +756,12 @@ if uploaded_files is not None:
                     sns.heatmap ( face_1_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.2, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_mask_dup, \
                                 yticklabels=pack_label, annot= face_1_annot_dup, )
-                    face_ax_1[1].set_title ( "Reapeted face 1" )
+                    face_ax_1[1].set_title ( "Repeated face 1" )
 
                     sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
                                 yticklabels=pack_label, annot= face_2_annot_dup, )
-                    face_ax_2[1].set_title ( "Reapeted face 2" )
+                    face_ax_2[1].set_title ( "Repeated face 2" )
                     
                     pack_face1.pyplot ( fig_pack_1)
                     pack_face2.pyplot ( fig_pack_2)
@@ -777,7 +777,7 @@ if uploaded_files is not None:
                     
 
             if model_repeat:
-                with st.expander("MACHINE REPEATE"):
+                with st.expander("MACHINE REPETITION"):
                     pack_face1, pack_face2 = st.columns(2)
 
                     face_1_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==1) & (pack_data_non_dup['Point']==1)]
@@ -838,12 +838,12 @@ if uploaded_files is not None:
                     sns.heatmap ( face_1_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.2, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_mask_dup, \
                                 yticklabels=pack_label, annot= face_1_annot_dup, )
-                    face_ax_1[1].set_title ( "Reapeteeeed face 1" )
+                    face_ax_1[1].set_title ( "Repeated face 1" )
 
                     sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
                                 linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
                                 yticklabels=pack_label, annot= face_2_annot_dup, )
-                    face_ax_2[1].set_title ( "Reapeted face 2" )
+                    face_ax_2[1].set_title ( "Repeated face 2" )
                     
                     pack_face1.pyplot ( fig_pack_1)#, use_container_width=True )
                     pack_face2.pyplot ( fig_pack_2)#, use_container_width=True )
