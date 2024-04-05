@@ -3,7 +3,7 @@ services:
   app: 
     build: .
     container_name: sads_batch_new
-    command: streamlit run --server.headless true --server.port 8501 st_multi_batch.py 
+    command: streamlit run --server.headless true --server.port 8501 main.py 
     ports:
       - 8080:8501
     # volumes:
