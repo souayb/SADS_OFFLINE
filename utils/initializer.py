@@ -5,6 +5,8 @@ import shutil
 import utils
 import pandas as pd
 import streamlit as st 
+import numpy as np
+import streamlit as st
 
 
 def configure_plotting():
@@ -26,11 +28,15 @@ def create_download_zip(zip_directory, zip_path, filename='download.zip'):
     href = f'<a href="data:file/zip;base64,{b64}" download="{filename}">Download zip file</a>'
     st.markdown(href, unsafe_allow_html=True)
 
-def data_reader(dataPath):
-    """Read and preprocess data."""
+def data_reader(dataPath:str) -> pd.DataFrame :
     df = pd.read_csv(dataPath, decimal=',')
     prepro = utils.Preprocessing()
+    st.write("Preprocessing data")
+    st.dataframe(df.head())
     data, prob_barcode = prepro.preprocess(df)
-    data.rename(columns={...}, inplace=True)
-    # Further processing
+    
+    data.rename(columns={'BarCode':'Barcode', 'Output Joules': 'Joules', 'Charge (v)':'Charge', 'Residue (v)':'Residue','Force L N':'Force_N', 'Force L N_1':'Force_N_1', 'Y/M/D hh:mm:ss': 'Datetime'}, inplace=True)
+    data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']] = data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].astype(np.float32)
+    data[['Face', 'Cell', 'Point']] = data[['Face', 'Cell', 'Point']].values.astype( int )
+    JOULES = data['Joules'].values
     return data, prob_barcode

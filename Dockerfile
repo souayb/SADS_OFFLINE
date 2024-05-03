@@ -15,11 +15,14 @@ RUN poetry config virtualenvs.create false && \
 
 # Copy only the necessary files for application execution
 COPY st_multi_batch.py .
-COPY model.pkl .
+# COPY model.pkl .
 COPY sads_logging.py .
 COPY utils/ ./utils/
+COPY src/ ./src/
+
 # Copy Streamlit config file
 COPY .streamlit/config.toml .streamlit/config.toml
+
 
 
 # Set environment variables
@@ -27,5 +30,5 @@ ENV PYTHONPATH=/app
 EXPOSE 8501
 
 # Set the entry point for the Docker container
-ENTRYPOINT ["streamlit", "run", "--server.headless=true", "--server.port=8501", "main.py"]
-# ENTRYPOINT ["streamlit", "run", "--server.headless=true", "--server.port=8501", "--server.fileWatcherType=none", "--browser.gatherUsageStats=false", "app/main.py"]
+# ENTRYPOINT ["streamlit", "run", "--server.headless=true", "--server.port=8501", "app/main.py"]
+ENTRYPOINT ["streamlit", "run", "--server.headless=true", "--server.port=8501", "--server.fileWatcherType=none", "--browser.gatherUsageStats=false", "src/main.py"]

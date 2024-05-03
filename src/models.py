@@ -4,7 +4,8 @@ from sklearn.ensemble import IsolationForest
 from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.svm import OneClassSVM
-
+import pickle
+import os
 
 def train_model(data, model_type: str = "ifor", **kwargs):
     """Train and return an anomaly detection model.
@@ -60,3 +61,32 @@ def train_model(data, model_type: str = "ifor", **kwargs):
     model_out.fit(data_train)
          
     return model_out
+
+def load_model(model_path: str = "src/data"):
+    """Load a trained model from disk.
+
+    Args:
+        model_path (str): The path to the model file.
+
+    Returns:
+        The trained model.
+    """
+    model_path = os.path.join(model_path, 'model.pkl')
+    if not os.path.exists( model_path):
+        raise FileNotFoundError("Model file not found.")
+    with open(model_path, 'rb') as file:
+        model = pickle.load(file)
+    return model
+
+def save_model(model, model_path: str = "src/data"):
+    """Save a trained model to disk.
+
+    Args:
+        model: The trained model.
+        model_path (str): The path to save the model file.
+    """
+    print("Saving model to disk...")
+    with open(os.path.join(model_path, 'model.pkl'), 'wb') as file:
+
+        pickle.dump(model, file)
+    return
