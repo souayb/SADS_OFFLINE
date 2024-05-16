@@ -88,23 +88,23 @@ def _draw_pack(dupl_data:pd.DataFrame, non_dupl_data:pd.DataFrame,
         
         sns.heatmap ( face_1, cmap= ListedColormap( ['green', 'red'] ), linecolor='lightgray',
                     linewidths=0.2, square=False, ax=face_ax_1[0], cbar=False, mask=face_1_mask, \
-                    yticklabels=pack_label, annot= face_1_annot)
+                    yticklabels=pack_label, annot= face_1_annot, fmt='g')
      
         face_ax_1[0].set_title ( "Face 1" )
 
         sns.heatmap ( face_2, cmap=ListedColormap ( ['green', 'red'] ),  linecolor='lightgray',
                     linewidths=0.2, square=False, ax=face_ax_2[0], cbar=False, mask=face_2_mask, \
-                    yticklabels=pack_label, annot= face_2_annot, )
+                    yticklabels=pack_label, annot= face_2_annot,fmt='g' )
         face_ax_2[0].set_title ( "Face 2" )
 
         sns.heatmap ( face_1_dup, cmap=ListedColormap ( ['green', 'red'] ), linecolor='lightgray',
                     linewidths=0.2, square=False, ax=face_ax_1[1], cbar=False, mask=face_1_mask_dup, \
-                    yticklabels=pack_label, annot= face_1_annot_dup, )
+                    yticklabels=pack_label, annot= face_1_annot_dup, fmt='g')
         face_ax_1[1].set_title ( "Reapeted face 1" )
 
         sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), linecolor='lightgray',
                     linewidths=0.2, square=False, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
-                    yticklabels=pack_label, annot= face_2_annot_dup, )
+                    yticklabels=pack_label, annot= face_2_annot_dup, fmt='g' )
         face_ax_2[1].set_title ( "Reapeted face 2" )
         pack_face1.pyplot ( fig_pack_1)
         pack_face2.pyplot ( fig_pack_2)
