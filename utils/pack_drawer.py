@@ -67,3 +67,10 @@ def get_face(pack_data_non_dup):
     face_2_df_1 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==1)]
     face_2_df_2 = pack_data_non_dup[(pack_data_non_dup['Face']==2) & (pack_data_non_dup['Point']==2)]
     return face_1_df_1,face_1_df_2,face_2_df_1,face_2_df_2
+
+def get_pack_label(row_number:int):
+    result = []
+    for i in range(row_number): 
+        result.append(f'cell_{i+1}')  # Append cell_i to the result list
+        result.append('---------')  # Append separator after each cell
+    return result

@@ -5,10 +5,10 @@ import shap
 import seaborn as sns
 import os
 import pandas as pd 
-from utils.pack_drawer import get_lm, face1_face2, sinusoid_duplicate, sinusoid, get_face
+from utils.pack_drawer import get_lm, face1_face2, sinusoid_duplicate, sinusoid, get_face, get_pack_label
 
-def draw_pack(view, pack_data, model_ifor, model_repeat, row_number, column_number, pack_download, pack_label, pack_path):       
-
+def draw_pack(view, pack_data, model_ifor, model_repeat, row_number, column_number, pack_download, pack_path):       
+    pack_label = get_pack_label(row_number=row_number//2)
     with view :
         duplicate_count = pack_data.groupby(['Barcode', 'Face', 'Cell', 'Point'], as_index=False).size()
         pack_data_non_dup = pack_data[~pack_data.duplicated(subset=['Barcode', 'Face', 'Cell', 'Point'], keep= 'last')]
@@ -83,28 +83,29 @@ def _draw_pack(dupl_data:pd.DataFrame, non_dupl_data:pd.DataFrame,
 
         fig_pack_1, face_ax_1 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
         fig_pack_2, face_ax_2 = plt.subplots ( nrows=2, ncols=1, figsize=(5, 5) )
-
-
-        sns.heatmap ( face_1, cmap= ListedColormap( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                    linewidths=0.2, square=True, ax=face_ax_1[0], cbar=False, mask=face_1_mask, \
-                    yticklabels=pack_label, annot=face_1_annot, )
+        
+        
+        
+        sns.heatmap ( face_1, cmap= ListedColormap( ['green', 'red'] ), linecolor='lightgray',
+                    linewidths=0.2, square=False, ax=face_ax_1[0], cbar=False, mask=face_1_mask, \
+                    yticklabels=pack_label, annot= face_1_annot)
+     
         face_ax_1[0].set_title ( "Face 1" )
 
-        sns.heatmap ( face_2, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                    linewidths=0.2, square=True, ax=face_ax_2[0], cbar=False, mask=face_2_mask, \
+        sns.heatmap ( face_2, cmap=ListedColormap ( ['green', 'red'] ),  linecolor='lightgray',
+                    linewidths=0.2, square=False, ax=face_ax_2[0], cbar=False, mask=face_2_mask, \
                     yticklabels=pack_label, annot= face_2_annot, )
         face_ax_2[0].set_title ( "Face 2" )
 
-        sns.heatmap ( face_1_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                    linewidths=0.2, square=True, ax=face_ax_1[1], cbar=False, mask=face_1_mask_dup, \
+        sns.heatmap ( face_1_dup, cmap=ListedColormap ( ['green', 'red'] ), linecolor='lightgray',
+                    linewidths=0.2, square=False, ax=face_ax_1[1], cbar=False, mask=face_1_mask_dup, \
                     yticklabels=pack_label, annot= face_1_annot_dup, )
         face_ax_1[1].set_title ( "Reapeted face 1" )
 
-        sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), vmin=0, vmax=1, linecolor='lightgray',
-                    linewidths=0.2, square=True, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
+        sns.heatmap ( face_2_dup, cmap=ListedColormap ( ['green', 'red'] ), linecolor='lightgray',
+                    linewidths=0.2, square=False, ax=face_ax_2[1], cbar=False, mask=face_2_mask_dup, \
                     yticklabels=pack_label, annot= face_2_annot_dup, )
         face_ax_2[1].set_title ( "Reapeted face 2" )
-        
         pack_face1.pyplot ( fig_pack_1)
         pack_face2.pyplot ( fig_pack_2)
 

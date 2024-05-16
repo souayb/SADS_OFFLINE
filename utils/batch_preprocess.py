@@ -47,7 +47,7 @@ class Preprocessing:
         df['anomaly'] = df.duplicated(subset=['BarCode','Face_Cell_Point'], keep='last')
         return df
     
-    @st.cache(allow_output_mutation=True)     
+    # @st.cache_data()
     def preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
         # df_out = self.apply_filter(df)
         df_out = self._clean_weld_data(df, self.time_col)

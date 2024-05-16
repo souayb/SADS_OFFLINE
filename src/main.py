@@ -72,7 +72,7 @@ def create_download_zip(zip_directory, zip_path, filename='foo.zip'):
 
 # st.markdown(new_title, unsafe_allow_html=True)
 
-st.cache(suppress_st_warning=True)
+@st.cache_data()
 # @st.experimental_memo(suppress_st_warning=True)
 def data_reader(dataPath:str) -> pd.DataFrame :
     df = pd.read_csv(dataPath, decimal=',')
@@ -109,7 +109,7 @@ RESULT_CHANGED = False
 RESULTING_DATAFRAME = pd.DataFrame()
 model_path =  "src/data"
 
-st.cache(suppress_st_warning=True, allow_output_mutation=True)
+# @st.cache_data
 def get_logger(save:bool=True):
     """
     Generic utility function to get logger object with fixed configurations
@@ -133,7 +133,7 @@ def get_logger(save:bool=True):
         with open(SADS_CONFIG_FILE) as infile:
             return json.load(infile)
         
-st.set_option('deprecation.showPyplotGlobalUse', False)
+# st.set_option('deprecation.showPyplotGlobalUse', False)
 with st.sidebar.container():
     st.title("SADS settings input")
  
@@ -286,7 +286,7 @@ if uploaded_files is not None:
         raise Exception ( 'please upload the correct file ' )
     
 
-    with st.spinner('Wait for preprocessing and model training to finish'):
+    with st.spinner('Wait for data to load'):
         st.info('Preprocessing started ')
         data, prob_lists = data_reader(uploaded_files)
         if prob_lists:
@@ -314,6 +314,7 @@ if uploaded_files is not None:
 
             else :
                 if not os.path.exists(os.path.join(model_path, 'model.pkl')):
+                    st.info("training the model")
                     ifor = models.train_model(data=data)
                     # pickle.dump(ifor, open(os.path.join(model_path, 'model.pkl'), 'wb'))
                     models.save_model(ifor, model_path= model_path)
@@ -402,7 +403,7 @@ if uploaded_files is not None:
         with st.expander("FEATURE IMPORTANCE"):
             shap_view.show_importance(model=ifor, pack_data=pack_data)
 
-        pack_views.draw_pack(view=pack_view, pack_data=pack_data, model_ifor=model_ifor, model_repeat=model_repeat, row_number=row_number, column_number=column_number, pack_download=pack_download, pack_label=pack_label, pack_path=pack_path)
+        pack_views.draw_pack(view=pack_view, pack_data=pack_data, model_ifor=model_ifor, model_repeat=model_repeat, row_number=row_number, column_number=column_number, pack_download=pack_download, pack_path=pack_path)
 
 #### SAVING THE DATE INTO THE LOCAL MACHINE
     if save_submit:

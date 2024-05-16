@@ -1,14 +1,11 @@
 import pathlib
 from contextlib import suppress
 import json
-from itertools import count
-from collections import Counter
 import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import shap 
-import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
 import pickle
@@ -16,14 +13,8 @@ import zipfile
 from io import BytesIO
 from datetime import datetime
 
-# sk-learn model import
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import IsolationForest
-from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
-from sklearn.neighbors import LocalOutlierFactor
-from sklearn.svm import OneClassSVM
-
+ 
+from src.models import train_model
 import utils
 import pandas as pd
 from matplotlib.colors import ListedColormap
@@ -91,7 +82,7 @@ def create_download_zip(zip_directory, zip_path, filename='foo.zip'):
 
 # st.markdown(new_title, unsafe_allow_html=True)
 
-st.cache(suppress_st_warning=True)
+@st.cache_data
 # @st.experimental_memo(suppress_st_warning=True)
 def data_reader(dataPath:str) -> pd.DataFrame :
     df = pd.read_csv(dataPath, decimal=',')
@@ -103,7 +94,7 @@ def data_reader(dataPath:str) -> pd.DataFrame :
     JOULES = data['Joules'].values
     return data, prob_barcode
 
-st.cache()
+@st.cache_data
 def convert_df(df):
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
     return df.to_csv().encode('utf-8')
@@ -401,7 +392,7 @@ if uploaded_files is not None:
                 get_logger(save=True)
                 if training_type=='Whole':
                     with st.spinner('Training... this may take some time'):
-                        IF = utils.train_model(data=data)
+                        IF = train_model(data=data)
                         pickle.dump(IF, open('model.pkl', 'wb'))
                         st.success('Training completed!')
 
@@ -450,14 +441,14 @@ if uploaded_files is not None:
         if SHIFT_DETECTED:
             if training_type == 'Pack':
                 if model_ifor:
-                    ifor = utils.train_model(pack_data, model_type='ifor')
+                    ifor = train_model(pack_data, model_type='ifor')
                     ifor_cluster = ifor.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
 
             else :
                 if model_ifor:
-                    ifor = utils.train_model(data, model_type='ifor')
+                    ifor = train_model(data, model_type='ifor')
                     ifor_cluster = ifor.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     data['ifor_anomaly']  =data['ifor_anomaly'].astype(bool)
@@ -466,14 +457,14 @@ if uploaded_files is not None:
 
             if training_type == 'Pack':
                 if model_ifor:
-                    ifor = utils.train_model(pack_data, model_type='ifor')
+                    ifor = train_model(pack_data, model_type='ifor')
                     ifor_cluster = ifor.predict(pack_data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     pack_data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     pack_data['ifor_anomaly']  =pack_data['ifor_anomaly'].astype(bool)
 
             else:
                 if model_ifor:
-                    ifor = utils.train_model(data, model_type='ifor')
+                    ifor = train_model(data, model_type='ifor')
                     ifor_cluster = ifor.predict(data[['Joules', 'Charge', 'Residue', 'Force_N', 'Force_N_1']].values)
                     data['ifor_anomaly'] = np.where(ifor_cluster == 1, 0, 1)
                     data['ifor_anomaly']  =data['ifor_anomaly'].astype(bool)

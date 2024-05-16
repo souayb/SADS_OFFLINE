@@ -61,7 +61,6 @@ def train_model(data, model_type: str = "ifor", **kwargs):
     model_out.fit(data_train)
          
     return model_out
-
 def load_model(model_path: str = "src/data"):
     """Load a trained model from disk.
 
